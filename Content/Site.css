@@ -43,7 +43,7 @@
       position: absolute;
       left: 0;
       top: 0;
-      z-index: 5; }
+      z-index: 4; }
   .imageview_navbutton, .imageview_navbutton-right, .videoview_navbutton-right {
     width: 5%;
     height: 100%;
@@ -65,6 +65,21 @@
     padding: 8px;
     margin-top: 10px;
     font-weight: bold; }
+
+.slideshow_stopper {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 30px;
+  height: 30px;
+  background-color: #dedede;
+  font-size: 2rem;
+  z-index: 5;
+  text-align: center;
+  cursor: pointer; }
+  .slideshow_stopper:hover {
+    background-color: #ababab;
+    color: #FFF; }
 
 .directory_list {
   display: block;

@@ -16,6 +16,9 @@ function ImageView() {
     this.$currentPage = $("[data-current-page]");
     this.$slideshowDelay = $("[data-slideshow-delay]");
     this.$isSlideshowEnabled = $("[data-slideshow-enabled]");
+    this.$navbars = $(".navbar,.imageview_navbutton,.imageview_navbutton-right,.steppingstone_list,.button_list");
+    this.$imageLoader = $("[data-loader='image']");
+    this.$escapeslideShow = $("[data-stop-slideshow]");
 
     this.isSlideshowEnabled = this.$isSlideshowEnabled.is(":checked");
     this.slideshowDelay = +this.$slideshowDelay.val();
@@ -52,13 +55,62 @@ ImageView.prototype.addEventHandlers = function () {
         }
     );
 
+    this.$escapeslideShow.on("click",
+        function() {
+
+            self.$isSlideshowEnabled.click();
+        }
+    );
+
     this.$isSlideshowEnabled.on("click",
         function () {
 
             self.isSlideshowEnabled = $(this).is(":checked");
             self.synchroniseFocus();
+
+            if (!self.isSlideshowEnabled) {
+
+                self.unsetFocusedImageDimensions();
+            }
+            else {
+
+                self.setFocusedImageDimensions();
+            }
         }
     );
+
+
+    this.$image.on("load",
+        function () {
+
+            self.$imageLoader.hide();
+            self.$image.show();
+
+            self.$image.css("width", "");
+            self.$image.css("height", "");
+
+            if (!self.isSlideshowEnabled) {
+
+                self.unsetFocusedImageDimensions();
+            }
+            else {
+
+                self.setFocusedImageDimensions();
+            }
+        }
+    );
+}
+
+ImageView.prototype.synchroniseFocus = function () {
+
+    if (this.isSlideshowEnabled) {
+
+        this.focusImage();
+    }
+    else {
+
+        this.defocusImage();
+    }
 }
 
 ImageView.prototype.slideshowThread = function () {
@@ -77,18 +129,6 @@ ImageView.prototype.slideshowThread = function () {
         },
         self.slideshowDelay * 1000
     );
-}
-
-ImageView.prototype.synchroniseFocus = function() {
-
-    if(this.isSlideshowEnabled) {
-
-        this.focusImage();
-    }
-    else {
-
-        this.defocusImage();
-    }
 }
 
 ImageView.prototype.getImagePathAsync = function () {
@@ -179,64 +219,82 @@ ImageView.prototype.refreshImageDisplay = function (imageViewModel, previousImag
         .removeClass("button_imagelink")
         .addClass("button_imagelink-disabled")
         .removeAttr("href");
+}
 
-    this.synchroniseFocus();
+ImageView.prototype.setFocusedImageDimensions = function () {
+
+    var originalWidth = this.$image.outerWidth();
+    var originalHeight = this.$image.outerHeight();
+    var aspectRatio = originalWidth / originalHeight;
+
+    this.$image.css("width", "100%");
+    var width = this.$image.outerWidth();
+
+    this.$image.css("height", (width / aspectRatio) + "px");
+    var height = this.$image.outerHeight();
+
+    // If the image is taller than the window
+    if (height > window.innerHeight) {
+
+        this.$image.css("height", "100%");
+        height = this.$image.outerHeight();
+
+        this.$image.css("width", (height * aspectRatio) + "px");
+    }
+    else if (width > window.innerWidth) {
+
+        this.$image.css("width", "100%");
+        width = this.$image.outerWidth();
+
+        this.$image.css("height", (width / aspectRatio) + "px");
+    }
+
+    var windowWidth = window.innerWidth;
+    var imageAndWindowDifference = windowWidth - this.$image.outerWidth();
+
+    this.$image.css("left", imageAndWindowDifference / 2 + "px");
+}
+
+ImageView.prototype.unsetFocusedImageDimensions = function () {
+
+    this.$image.css("width", "");
+    this.$image.css("height", "");
+    this.$image.css("left", "");
 }
 
 ImageView.prototype.defocusImage = function () {
 
-    this.$image
-        .removeClass("imageview_image-focused")
-        .addClass("imageview_image");
+    if (!this.$image.is(".imageview_image")) {
+
+        this.$image
+            .removeClass("imageview_image-focused")
+            .addClass("imageview_image");
+
+        this.$navbars.show();
+    }
 }
 
 ImageView.prototype.focusImage = function () {
 
-    this.$image
-        .removeClass("imageview_image")
-        .addClass("imageview_image-focused");
+    if (!this.$image.is(".imageview_image-focused")) {
 
-    var width = this.$image.innerWidth();
-    var height = this.$image.innerHeight();
-    var aspectRatio = width / height;
+        this.$image
+            .removeClass("imageview_image")
+            .addClass("imageview_image-focused");
 
-    if (aspectRatio >= 1) {
-
-        this.$image.css("width", "100%");
-        this.$image.css("height", (height * aspectRatio) + "px");
-    } else {
-
-        this.$image.css("height", "100%");
-        this.$image.css("width", (width / aspectRatio) + "px");
+        this.$navbars.hide();
     }
-
-    height = this.$image.innerHeight();
-    if (height > window.innerHeight) {
-
-        this.$image.css("height", "100%");
-
-        height = this.$image.innerHeight();
-
-        this.$image.css("width", (height * aspectRatio) + "px");
-    } else {
-
-        this.$image.css("width", "100%");
-
-        width = this.$image.innerWidth();
-
-        this.$image.css("height", (width * aspectRatio) + "px");
-    }
-
-    var windowWidth = window.innerWidth;
-    var imageAndWindowDifference = windowWidth - this.$image.innerWidth;
-
-    this.$image.css("left", imageAndWindowDifference / 2 + "px");
 }
 
 $(function () {
 
     var imageView = new ImageView();
+
+    // Load the image for the current page
+    imageView.navigatePagesAsync(0);
+
+    // Initialise the rest of the page
+    imageView.slideshowThread();
     imageView.addEventHandlers();
     imageView.synchroniseFocus();
-    imageView.slideshowThread();
 })

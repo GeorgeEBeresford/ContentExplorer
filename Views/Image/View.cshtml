@@ -38,10 +38,15 @@
     @RenderSteppingStones(image.Directory, baseSiteDirectory, baseDirectory, filter)
 </nav>
 
+<div class="slideshow_stopper" data-stop-slideshow>
+    X
+</div>
+
 <a class="imageview_navbutton" data-button="previous"><</a>
 <div class="imageview" data-image-view>
-    <a href="@imagePath" target="_blank" data-image-link>
-        <img src="@imagePath" class="imageview_image" data-image />
+    <a href="" target="_blank" data-image-link>
+        <img src="../Content/Images/ajax-loader.gif" style="margin-top: 10px;" data-loader="image" />
+        <img src="" class="imageview_image" data-image style="display: none" />
     </a>
     <div class="imageview_name" data-image-name>@image.Name</div>
 </div>

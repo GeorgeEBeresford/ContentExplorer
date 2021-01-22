@@ -102,7 +102,7 @@
                 string linkPath = Url.Action("View", new { path = path, page = imageNumber, filter = filter });
 
                 <li class="image_item" style="background-image: url('@thumbnailPath'); background-size: cover">
-                    <a href="@linkPath" target="_blank" class="image_link">
+                    <a href="@linkPath" class="image_link">
                         <div class="image_name">@image.Name</div>
                     </a>
                 </li>
