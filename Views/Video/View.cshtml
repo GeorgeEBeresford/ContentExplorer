@@ -1,0 +1,122 @@
+﻿@{
+    string baseDirectory = ConfigurationManager.AppSettings["VideosPath"];
+    string cdn = ConfigurationManager.AppSettings["CDNPath"];
+    string relativeDirectory = ViewBag.Path;
+    int currentPage = ViewBag.Id;
+    string filter = ViewBag.Filter;
+    FileInfo video = ViewBag.Video;
+    int maxPages = ViewBag.VideoCount;
+    string directoryPath = ViewBag.Path;
+
+    ViewBag.Title = video.Directory.Name + " - " + video.Name;
+
+    string videoPath = Path.Combine(cdn, baseDirectory, relativeDirectory, video.Name).Replace("\\", "/");
+    string baseSiteDirectory = ConfigurationManager.AppSettings["BaseDirectory"];
+}
+
+@helper RenderThumbnail(string videoFilePath, string videoName, string videoWebPath)
+{
+    string imageName = string.Format("{0}.jpg", videoName);
+    string thumbnailLocation = Path.Combine(videoFilePath, imageName);
+
+    if (new FileInfo(thumbnailLocation).Exists == false)
+    {
+        using (Stream jpgStream = new FileStream(thumbnailLocation, FileMode.Create))
+        {
+            ConvertSettings convertSettings = new ConvertSettings
+            {
+                VideoFrameSize = "300x300",
+            };
+
+            FFMpegConverter ffMpeg = new NReco.VideoConverter.FFMpegConverter();
+            ffMpeg.GetVideoThumbnail(Path.Combine(videoFilePath, videoName), jpgStream, 10, convertSettings);
+        }
+    }
+
+    string thumbnailWebPath = Path.Combine(videoWebPath, imageName);
+    <img src="@thumbnailWebPath" class="button_videopreview" />
+}
+
+
+@helper RenderSteppingStones(DirectoryInfo parentDirectory, string baseSiteDirectory, string videoDirectory, string filter)
+{
+
+
+    if (parentDirectory.Parent != null && parentDirectory.Parent.FullName != baseSiteDirectory)
+    {
+        @RenderSteppingStones(parentDirectory.Parent, baseSiteDirectory, videoDirectory, filter)
+    }
+    <a class="steppingstone_item" href="@Url.Action("Index", new { path = parentDirectory.FullName.Substring(baseSiteDirectory.Length + videoDirectory.Length + 1), filter = filter })">@(parentDirectory.Name)</a>
+}
+
+@using System.Configuration
+@using System.Web.UI.WebControls
+@using NReco.VideoConverter
+
+<nav class="steppingstone_list">
+    @RenderSteppingStones(video.Directory, baseSiteDirectory, baseDirectory, filter)
+</nav>
+
+<a class="videoview_navbutton" href="@Url.Action("View", new {path = relativeDirectory, page = currentPage - 1, filter = filter})"><</a>
+<div class="videoview">
+    <video controls class="videoview_video">
+        <source src="@videoPath" />
+    </video>
+    <div class="videoview_name">@video.Name</div>
+</div>
+<a class="videoview_navbutton-right" href="@Url.Action("View", new {path = relativeDirectory, page = currentPage + 1, filter = filter})">></a>
+
+@if (maxPages > 1)
+{
+    int numberOfPreviews = maxPages > 15 ? 15 : maxPages;
+
+    <div class="button_wrapper">
+        <div class="button_list">
+            @{
+                int pageIndex = currentPage - 7;
+                int pageRange = 15 - (numberOfPreviews + 7);
+
+                if (pageRange < 0)
+                {
+                    // Show previous pages so we aren't left with a tiny amount of previews
+                    pageIndex += pageRange;
+                }
+
+                if (pageIndex < 1)
+                {
+                    pageIndex = 1;
+                }
+
+                IEnumerable<FileInfo> filePreviewEnumerable = ViewBag.Previews as IEnumerable<FileInfo>;
+                ICollection<FileInfo> filePreviews = filePreviewEnumerable.ToList();
+                int previewPage = ViewBag.StartingPreview;
+                int previewIndex = 0;
+            }
+
+            @while (previewIndex < filePreviews.Count)
+            {
+                FileInfo videoFile = filePreviews.ElementAt(previewIndex);
+                string previewPath = videoFile.Directory.FullName.Replace("\\", "/");
+
+                if (previewPage != currentPage)
+                {
+                    <a href="@Url.Action("View", new {path = relativeDirectory, page = previewPage, filter = filter})" class="button_videolink">
+                        @RenderThumbnail(previewPath, videoFile.Name, Path.Combine(cdn, baseDirectory, directoryPath))
+                    </a>
+                }
+                else
+                {
+                    <div class="button_videolink-disabled">
+                        @RenderThumbnail(previewPath, videoFile.Name, Path.Combine(cdn, baseDirectory, directoryPath))
+                    </div>
+                }
+
+                previewPage++;
+                previewIndex++;
+            }
+        </div>
+        <div>
+            <b>@currentPage</b> of @maxPages
+        </div>
+    </div>
+}

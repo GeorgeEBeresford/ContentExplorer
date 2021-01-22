@@ -1,0 +1,27 @@
+﻿.sidebar {
+    width: 300px;
+    position: fixed;
+    background-color: #a8a8a8;
+    padding-left: 15px;
+    padding-right: 15px;
+    height: 100%;
+    padding-top: 30px;
+    
+    & a {
+
+        color: #fff;
+        font-weight: bold;
+
+        &:hover {
+            font-weight: normal;
+            text-decoration: none;
+        }
+    }
+}
+
+.content_sidebar {
+    margin-left: 300px;
+    padding-top: 30px;
+    padding-left: 15px;
+    padding-right: 15px;
+}

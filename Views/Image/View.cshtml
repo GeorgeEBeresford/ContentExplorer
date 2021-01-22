@@ -1,0 +1,117 @@
+﻿@{
+    string baseDirectory = ConfigurationManager.AppSettings["ImagesPath"];
+    string cdn = ConfigurationManager.AppSettings["CDNPath"];
+    string relativeDirectory = ViewBag.Path;
+    int currentPage = ViewBag.Id;
+    string filter = ViewBag.Filter;
+    FileInfo image = ViewBag.Image;
+    int maxPages = ViewBag.ImageCount;
+    string directoryPath = ViewBag.Path;
+
+    ViewBag.Title = image.Directory.Name + " - " + image.Name;
+
+    string imagePath = Path.Combine(cdn, baseDirectory, relativeDirectory, image.Name).Replace("\\", "/");
+    string baseSiteDirectory = ConfigurationManager.AppSettings["BaseDirectory"];
+}
+
+@helper RenderSteppingStones(DirectoryInfo parentDirectory, string baseSiteDirectory, string imageDirectory, string filter)
+{
+
+
+    if (parentDirectory.Parent != null && parentDirectory.Parent.FullName != baseSiteDirectory)
+    {
+        @RenderSteppingStones(parentDirectory.Parent, baseSiteDirectory, imageDirectory, filter)
+    }
+    <a class="steppingstone_item" href="@Url.Action("Index", new { path = parentDirectory.FullName.Substring(baseSiteDirectory.Length + imageDirectory.Length + 1), filter = filter })">@(parentDirectory.Name)</a>
+}
+
+@using System.Configuration
+@using System.Web.UI.WebControls
+
+<input type="hidden" value="@baseSiteDirectory" data-site-base-directory autocomplete="off" />
+<input type="hidden" value="@cdn" data-cdn-path autocomplete="off" />
+<input type="hidden" value="@relativeDirectory" data-relative-directory autocomplete="off" />
+<input type="hidden" value="@filter" data-filter autocomplete="off" />
+<input type="hidden" value="@maxPages" data-max-pages autocomplete="off" />
+
+<nav class="steppingstone_list">
+    @RenderSteppingStones(image.Directory, baseSiteDirectory, baseDirectory, filter)
+</nav>
+
+<a class="imageview_navbutton" data-button="previous"><</a>
+<div class="imageview" data-image-view>
+    <a href="@imagePath" target="_blank" data-image-link>
+        <img src="@imagePath" class="imageview_image" data-image />
+    </a>
+    <div class="imageview_name" data-image-name>@image.Name</div>
+</div>
+<a class="imageview_navbutton-right" data-button="next">></a>
+
+@if (maxPages > 1)
+{
+    int numberOfPreviews = maxPages > 15 ? 15 : maxPages;
+
+    <div class="button_wrapper">
+        <div class="button_list">
+            @{
+                int pageIndex = currentPage - 7;
+                int pageRange = 15 - (numberOfPreviews + 7);
+
+                if (pageRange < 0)
+                {
+                    // Show previous pages so we aren't left with a tiny amount of previews
+                    pageIndex += pageRange;
+                }
+
+                if (pageIndex < 1)
+                {
+                    pageIndex = 1;
+                }
+
+                IEnumerable<FileInfo> filePreviewEnumerable = ViewBag.Previews as IEnumerable<FileInfo>;
+                ICollection<FileInfo> filePreviews = filePreviewEnumerable.ToList();
+                int previewPage = ViewBag.StartingPreview;
+                int previewIndex = 0;
+            }
+
+            @while (previewIndex < filePreviews.Count)
+            {
+                string previewPath = Path.Combine(cdn, baseDirectory, relativeDirectory, filePreviews.ElementAt(previewIndex).Name).Replace("\\", "/");
+
+                if (previewPage != currentPage)
+                {
+                    <a data-page-button="@previewPage" href="@Url.Action("View", new {path = relativeDirectory, page = previewPage, filter = filter})" class="button_imagelink">
+                        <div class="button_imagepreview" style="background-image: url('@previewPath'); background-size: cover"></div>
+                    </a>
+                }
+                else
+                {
+                    <a class="button_imagelink-disabled" data-page-button="@previewPage">
+                        <div class="button_imagepreview" style="background-image: url('@previewPath'); background-size: cover"></div>
+                    </a>
+                }
+
+                previewPage++;
+                previewIndex++;
+            }
+        </div>
+        <div>
+            <b data-current-page>@currentPage</b> of @maxPages
+        </div>
+        <div class="controls">
+            <label class="controls_label controls_field">
+                Slideshow Enabled
+                <input type="checkbox" value="SlideshowEnabled" data-slideshow-enabled class="controls_input-checkbox"/>
+            </label>
+            <label class="controls_label controls_field">
+                Delay (in seconds)
+                <input type="text" value="3" data-slideshow-delay class="controls_input"/>
+            </label>
+        </div>
+    </div>
+}
+
+@section scripts {
+
+    @Scripts.Render("~/bundles/image/view")
+}

@@ -1,0 +1,94 @@
+﻿.image {
+
+    &_list {
+        display: block;
+        width: 100%;
+    }
+
+    &_item {
+        display: inline-block;
+        width: 200px;
+        height: 200px;
+        position: relative;
+        border-radius: 4px;
+        overflow: hidden;
+
+        &:hover {
+        }
+    }
+
+    &_link {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        display: block;
+        text-decoration: none;
+    }
+
+    &_name {
+        position: absolute;
+        padding: 6px;
+        width: 100%;
+        height: 30px;
+        bottom: 0;
+        overflow-y: hidden;
+        text-overflow: ellipsis;
+        background-color: #383838;
+        opacity: 0.8;
+        color: #cacaca;
+        font-weight: bold;
+        text-align: center;
+        overflow: hidden;
+    }
+}
+
+
+.imageview {
+    margin-top: 30px;
+    width: 100%;
+    text-align: center;
+
+    &_image {
+        display: inline-block;
+        max-width: 90%;
+
+        &-focused {
+
+            position: absolute;
+            left: 0;
+            top: 0;
+            z-index: 5;
+        }
+    }
+
+    &_navbutton {
+        width: 5%;
+        height: 100%;
+        position: fixed;
+        background-color: #383838;
+        left: 0;
+        opacity: 0.3;
+        transition: ease opacity 0.3s;
+        top: 0;
+        z-index: 0;
+        cursor: pointer;
+
+        &:hover {
+            opacity: 1;
+        }
+
+        &-right {
+
+            @extend .imageview_navbutton;
+            left: auto;
+            right: 0;
+        }
+    }
+
+    &_name {
+        font-size: 1.7rem;
+        padding: 8px;
+        margin-top: 10px;
+        font-weight: bold;
+    }
+}

@@ -1,0 +1,26 @@
+﻿.steppingstone {
+    &_list {
+
+        z-index: 1;
+        background-color: #686868;
+        height: 30px;
+        width: 100%;
+        padding: 4px 12px;
+        position: fixed;
+        overflow: hidden;
+    }
+    &_item {
+
+        color: #FFF;
+        font-weight: bold;
+        padding-right: 4px;
+        border-right: 1px solid #8a8a8a;
+
+        &:hover {
+
+            color: #FFF;
+            font-weight: normal;
+            text-decoration: none;
+        }
+    }
+}

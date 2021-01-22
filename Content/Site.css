@@ -1,0 +1,270 @@
+﻿.image_list {
+  display: block;
+  width: 100%; }
+
+.image_item {
+  display: inline-block;
+  width: 200px;
+  height: 200px;
+  position: relative;
+  border-radius: 4px;
+  overflow: hidden; }
+
+.image_link {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  display: block;
+  text-decoration: none; }
+
+.image_name {
+  position: absolute;
+  padding: 6px;
+  width: 100%;
+  height: 30px;
+  bottom: 0;
+  overflow-y: hidden;
+  text-overflow: ellipsis;
+  background-color: #383838;
+  opacity: 0.8;
+  color: #cacaca;
+  font-weight: bold;
+  text-align: center;
+  overflow: hidden; }
+
+.imageview {
+  margin-top: 30px;
+  width: 100%;
+  text-align: center; }
+  .imageview_image {
+    display: inline-block;
+    max-width: 90%; }
+    .imageview_image-focused {
+      position: absolute;
+      left: 0;
+      top: 0;
+      z-index: 5; }
+  .imageview_navbutton, .imageview_navbutton-right, .videoview_navbutton-right {
+    width: 5%;
+    height: 100%;
+    position: fixed;
+    background-color: #383838;
+    left: 0;
+    opacity: 0.3;
+    transition: ease opacity 0.3s;
+    top: 0;
+    z-index: 0;
+    cursor: pointer; }
+    .imageview_navbutton:hover, .imageview_navbutton-right:hover, .videoview_navbutton-right:hover {
+      opacity: 1; }
+    .imageview_navbutton-right {
+      left: auto;
+      right: 0; }
+  .imageview_name {
+    font-size: 1.7rem;
+    padding: 8px;
+    margin-top: 10px;
+    font-weight: bold; }
+
+.directory_list {
+  display: block;
+  width: 100%; }
+
+.directory_item {
+  display: inline-block;
+  width: 300px;
+  height: 300px;
+  position: relative;
+  border-radius: 4px;
+  overflow: hidden; }
+
+.directory_link {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  display: block;
+  text-decoration: none; }
+
+.directory_name {
+  position: absolute;
+  padding: 4px;
+  width: 100%;
+  height: 44px;
+  bottom: 0;
+  overflow-y: hidden;
+  text-overflow: ellipsis;
+  background-color: #383838;
+  opacity: 0.8;
+  color: #cacaca;
+  font-weight: bold;
+  text-align: center;
+  overflow: hidden; }
+
+.button_list {
+  display: inline-block; }
+
+.button_wrapper {
+  padding: 10px;
+  text-align: center;
+  width: 80%;
+  margin-left: 10%; }
+
+.button_item, .button_item-current {
+  width: 30px;
+  height: 30px;
+  display: inline-block;
+  padding: 2px;
+  box-sizing: border-box;
+  margin-right: 4px; }
+
+.button_imagelink, .button_imagelink-disabled, .button_videolink-disabled, .button_videolink {
+  display: inline-block;
+  border-radius: 4px;
+  margin-right: 8px;
+  margin-bottom: 8px;
+  border: 1px solid #ababab;
+  width: 150px;
+  height: 150px; }
+  .button_imagelink-disabled, .button_videolink-disabled {
+    opacity: 0.6; }
+
+.button_imagepreview, .button_videopreview {
+  display: block;
+  width: 100%;
+  height: 100%; }
+
+.sidebar {
+  width: 300px;
+  position: fixed;
+  background-color: #a8a8a8;
+  padding-left: 15px;
+  padding-right: 15px;
+  height: 100%;
+  padding-top: 30px; }
+  .sidebar a {
+    color: #fff;
+    font-weight: bold; }
+    .sidebar a:hover {
+      font-weight: normal;
+      text-decoration: none; }
+
+.content_sidebar {
+  margin-left: 300px;
+  padding-top: 30px;
+  padding-left: 15px;
+  padding-right: 15px; }
+
+.steppingstone_list {
+  z-index: 1;
+  background-color: #686868;
+  height: 30px;
+  width: 100%;
+  padding: 4px 12px;
+  position: fixed;
+  overflow: hidden; }
+
+.steppingstone_item {
+  color: #FFF;
+  font-weight: bold;
+  padding-right: 4px;
+  border-right: 1px solid #8a8a8a; }
+  .steppingstone_item:hover {
+    color: #FFF;
+    font-weight: normal;
+    text-decoration: none; }
+
+.controls {
+  margin-top: 10px; }
+  .controls_label {
+    vertical-align: middle; }
+  .controls_field {
+    display: inline-block;
+    min-width: 200px;
+    text-align: center; }
+  .controls_input, .controls_input-checkbox {
+    display: inline-block;
+    vertical-align: middle;
+    text-align: left; }
+
+.video_list {
+  display: block;
+  width: 100%; }
+
+.video_item {
+  display: inline-block;
+  width: 200px;
+  height: 200px;
+  position: relative;
+  border-radius: 4px;
+  overflow: hidden; }
+
+.video_link {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  display: block;
+  text-decoration: none; }
+
+.video_name {
+  position: absolute;
+  padding: 6px;
+  width: 100%;
+  height: 30px;
+  bottom: 0;
+  overflow-y: hidden;
+  text-overflow: ellipsis;
+  background-color: #383838;
+  opacity: 0.8;
+  color: #cacaca;
+  font-weight: bold;
+  text-align: center;
+  overflow: hidden; }
+
+.videoview {
+  margin-top: 30px;
+  width: 100%;
+  text-align: center; }
+  .videoview_video {
+    display: inline-block;
+    max-width: 90%; }
+  .videoview_navbutton {
+    width: 5%;
+    height: 100%;
+    position: fixed;
+    background-color: #383838;
+    left: 0;
+    opacity: 0.3;
+    transition: ease opacity 0.3s;
+    top: 0;
+    z-index: 0; }
+    .videoview_navbutton:hover {
+      opacity: 1; }
+    .videoview_navbutton-right {
+      left: auto;
+      right: 0; }
+  .videoview_name {
+    font-size: 1.7rem;
+    padding: 8px;
+    margin-top: 10px;
+    font-weight: bold; }
+
+body {
+  padding-top: 50px;
+  padding-bottom: 20px; }
+
+/* Set padding to keep content from hitting the edges */
+.body-content {
+  padding-left: 15px;
+  padding-right: 15px; }
+
+/* Override the default bootstrap behavior where horizontal description lists 
+   will truncate terms that are too long to fit in the left column 
+*/
+.dl-horizontal dt {
+  white-space: normal; }
+
+/* Set width on the form input elements since they're 100% wide by default */
+input,
+select,
+textarea {
+  max-width: 280px; }

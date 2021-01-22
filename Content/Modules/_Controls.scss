@@ -1,0 +1,26 @@
+﻿.controls {
+    margin-top: 10px;
+
+    &_label {
+        vertical-align: middle;
+    }
+
+    &_field {
+
+        display: inline-block;
+        min-width: 200px;
+        text-align: center;
+    }
+
+    &_input {
+
+        display: inline-block;
+        vertical-align: middle;
+        text-align: left;
+
+        &-checkbox {
+
+            @extend .controls_input;
+        }
+    }
+}

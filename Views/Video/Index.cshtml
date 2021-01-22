@@ -1,0 +1,170 @@
+﻿@{
+    ViewBag.Title = "Videos";
+
+    string baseDirectory = ConfigurationManager.AppSettings["VideosPath"];
+    string cdn = ConfigurationManager.AppSettings["CDNPath"];
+
+    DirectoryInfo relativeDirectory = ViewBag.Directory;
+    int currentPage = ViewBag.Page;
+    string filter = ViewBag.Filter;
+    string baseSiteDirectory = ConfigurationManager.AppSettings["BaseDirectory"];
+    string path = relativeDirectory.FullName.Substring(baseSiteDirectory.Length + baseDirectory.Length + 1).Trim("\\/.".ToCharArray());
+
+    if (path.Length > 1)
+    {
+        ViewBag.Title = relativeDirectory.Name + " ~ " + ViewBag.Title;
+    }
+    int videosPerPage = ViewBag.VideosPerPage;
+}
+
+@using System.Configuration
+@using System.Web.Configuration
+@using ContentExplorer.Services
+@model ContentExplorer.Models.ViewModels.DirectoryViewModel
+
+@helper RenderThumbnail(string videoFilePath, string videoName, string videoWebPath)
+{
+    string imageName = string.Format("{0}.jpg", videoName);
+    string thumbnailLocation = Path.Combine(videoFilePath, imageName);
+
+    FileInfo thumbnailInfo = new FileInfo(thumbnailLocation);
+    if (thumbnailInfo.Exists == false)
+    {
+        VideoThumbnailService videoThumbnailService = new VideoThumbnailService();
+        videoThumbnailService.CreateThumbnail(Path.Combine(videoFilePath, videoName));
+    }
+
+    // Replace characters which break css
+    string thumbnailWebPath = Path.Combine(videoWebPath, imageName)
+        .Replace("\\", "/")
+        .Replace("%", "%25")
+        .Replace("'", "%27");
+    <div style="background-image: url('@thumbnailWebPath'); background-size: cover; width: 100%; height: 100%"></div>
+}
+
+@helper RenderDirectory(DirectoryInfo directory, string cdn, string baseDirectory, string path, string baseSiteDirectory)
+{
+    VideoThumbnailService videoThumbnailService = new VideoThumbnailService();
+    FileInfo previewVideo = videoThumbnailService.GetVideoThumbnail(directory);
+
+    string thumbnailPath;
+
+    if (previewVideo != null)
+    {
+        string relativeWebPath = previewVideo.Directory.FullName.Substring(baseSiteDirectory.Length + baseDirectory.Length + 1).Trim("\\/.".ToCharArray());
+
+        thumbnailPath = Path.Combine(cdn, baseDirectory, relativeWebPath, previewVideo.Name).Replace("\\", "/");
+    }
+    else
+    {
+        thumbnailPath = "none";
+    }
+
+
+    // Replace characters which break css
+    thumbnailPath = thumbnailPath.Replace("'", "%27");
+
+    <li class="directory_item" style="background-image: url('@thumbnailPath'); background-size: cover">
+        <a href="@Url.Action("Index", new {path = Path.Combine(path, directory.Name)})" class="directory_link">
+            <div class="directory_name">@directory.Name</div>
+        </a>
+    </li>
+}
+
+@helper RenderSteppingStones(DirectoryInfo parentDirectory, string baseSiteDirectory, string videoDirectory, int page, string filter)
+{
+
+
+    if (parentDirectory.Parent != null && parentDirectory.Parent.FullName != baseSiteDirectory)
+    {
+        @RenderSteppingStones(parentDirectory.Parent, baseSiteDirectory, videoDirectory, page, filter)
+    }
+    <a class="steppingstone_item" href="@Url.Action("Index", new { path = parentDirectory.FullName.Substring(baseSiteDirectory.Length + videoDirectory.Length + 1), page = page, filter = filter })">@(parentDirectory.Name)</a>
+}
+
+<nav class="steppingstone_list">
+    @RenderSteppingStones(relativeDirectory, baseSiteDirectory, baseDirectory, currentPage, filter)
+</nav>
+
+<div class="sidebar">
+    <h2>Filters</h2>
+
+    @if (filter == "gif")
+    {
+        <a href="@Url.Action("Index", new { path = relativeDirectory, page = currentPage })">Animated Gifs: True</a>
+    }
+    else
+    {
+        <a href="@Url.Action("Index", new { path = relativeDirectory, page = currentPage, filter = "gif" })">Animated Gifs: False</a>
+    }
+</div>
+<div class="content_sidebar">
+
+    @if (Model.DirectoryInfos.Any())
+    {
+        <h1>Directories</h1>
+        <ul class="directory_list">
+            @foreach (DirectoryInfo directory in Model.DirectoryInfos)
+            {
+                @RenderDirectory(directory, cdn, baseDirectory, path, baseSiteDirectory)
+            }
+        </ul>
+    }
+
+    @if (Model.FileInfos.Any())
+    {
+        int videoNumber = (currentPage - 1) * videosPerPage + 1;
+
+        <h1>Videos</h1>
+        <ul class="video_list">
+
+            @for (int videoIndex = 0; videoIndex < Model.FileInfos.Count; videoIndex++)
+            {
+                FileInfo video = Model.FileInfos.ElementAt(videoIndex);
+                string previewPath = video.Directory.FullName.Replace("\\", "/");
+
+                string linkPath = Url.Action("View", new { path = path, page = videoNumber, filter = filter });
+
+                <li class="video_item">
+                    <a href="@linkPath" target="_blank" class="video_link">
+                        @RenderThumbnail(previewPath, video.Name, Path.Combine(cdn, baseDirectory, path))
+                        <div class="video_name">@video.Name</div>
+                    </a>
+                </li>
+
+                videoNumber++;
+            }
+        </ul>
+    }
+
+    @if (Model.FileInfos.Any() == false && Model.DirectoryInfos.Any() == false)
+    {
+        <h1>No files found</h1>
+    }
+
+    @{
+        int maxPages = Model.FileCount / videosPerPage;
+    }
+
+    @if (maxPages > 1)
+    {
+        <div class="button_wrapper">
+            <div class="button_list">
+                @for (int pageIndex = 1; pageIndex <= maxPages; pageIndex++)
+                {
+                    if (pageIndex != currentPage)
+                    {
+                        <a class="button_item" href="@Url.Action("Index", new { path = relativeDirectory, page = pageIndex, filter = filter })">@pageIndex</a>
+                    }
+                    else
+                    {
+                        <div class="button_item-current">@pageIndex</div>
+                    }
+                }
+            </div>
+            <div>
+                @maxPages Pages total
+            </div>
+        </div>
+    }
+</div>
