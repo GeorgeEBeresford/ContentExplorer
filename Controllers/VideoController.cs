@@ -190,18 +190,17 @@ namespace ContentExplorer.Controllers
             IEnumerable<FileInfo> validFiles = directory
                 .GetFiles()
                 .Where(file => fileTypeService.IsFileVideo(file.Name))
-                .Select(file => new
-                {
-                    File = file,
-                    Numerics = Regex.Match(file.Name, "[0-9]+")
-                })
-                .OrderBy(fileWithNumerics =>
-                {
-                    int.TryParse(fileWithNumerics.Numerics.Value, out int numericalMatch);
+                .OrderBy(file => file.Name)
+                .ThenBy(file =>
+                    {
 
-                    return numericalMatch;
-                })
-                .Select(fileWithNumerics => fileWithNumerics.File);
+                        Match numbersInName = Regex.Match(file.Name, "[0-9]+");
+
+                        bool isNumber = int.TryParse(numbersInName.Value, out int numericalMatch);
+
+                        return isNumber ? numericalMatch : 0;
+                    }
+                );
 
             return validFiles;
         }

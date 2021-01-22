@@ -64,7 +64,7 @@
 
 <a class="videoview_navbutton" href="@Url.Action("View", new {path = relativeDirectory, page = currentPage - 1, filter = filter})"><</a>
 <div class="videoview">
-    <video controls class="videoview_video">
+    <video controls loop class="videoview_video">
         @{
             if (extensionsToMimeTypes.ContainsKey(video.Extension))
             {
