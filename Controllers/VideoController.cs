@@ -146,6 +146,17 @@ namespace ContentExplorer.Controllers
             return Json(true, JsonRequestBehavior.AllowGet);
         }
 
+        [HttpGet]
+        public ActionResult ConvertUnplayableVideos(string path = "")
+        {
+            DirectoryInfo baseDirectory = GetCurrentDirectory(path);
+            VideoConversionService videoConversionService = new VideoConversionService();
+
+            videoConversionService.ConvertUnplayableVideos(baseDirectory);
+
+            return Json(true, JsonRequestBehavior.AllowGet);
+        }
+
         private ActionResult ReformatNames(DirectoryInfo directory)
         {
             IEnumerable<DirectoryInfo> subDirectories = directory.GetDirectories();
