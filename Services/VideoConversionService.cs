@@ -35,9 +35,7 @@ namespace ContentExplorer.Services
             {
                 int indexOfExtension = unplayableVideo.Name.LastIndexOf(".");
                 string videoType = unplayableVideo.Name.Substring(indexOfExtension + 1);
-                ConvertSettings convertSettings = new ConvertSettings();
-
-                ffMpegConverter.ConvertMedia(unplayableVideo.FullName, videoType, $"{unplayableVideo.FullName}.mp4", "mp4", convertSettings);
+                ffMpegConverter.ConvertMedia(unplayableVideo.FullName, $"{unplayableVideo.FullName}.mp4", "mp4");
                 unplayableVideo.MoveTo(Path.Combine(unplayableVideo.Directory.FullName, unplayableVideo.Name + ".old"));
             }
 
@@ -45,7 +43,8 @@ namespace ContentExplorer.Services
 
         private static readonly string[] UnplayableVideoTypes = new[]
         {
-            ".avi"
+            ".avi",
+            ".mkv"
         };
     }
 }

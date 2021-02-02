@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Web;
@@ -17,6 +18,16 @@ namespace ContentExplorer.Services
                 .Replace("\\", " ")
                 .Replace("/", " ")
                 .Replace(":", " - ");
+
+            string[] wordsToRemoveFromNames = ConfigurationManager.AppSettings["WordsToRemoveFromNames"]?.Split('|');
+
+            if (wordsToRemoveFromNames != null)
+            {
+                foreach (string wordToRemoveFromNames in wordsToRemoveFromNames)
+                {
+                    formattedFileName = formattedFileName.Replace($"{wordToRemoveFromNames} ", "");
+                }
+            }
 
             // Max length
             bool isTooLong = fileInfo.FullName.Length > 257;
