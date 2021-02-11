@@ -4,10 +4,7 @@ using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Web;
 using System.Web.Mvc;
-using System.Web.Script.Services;
-using System.Web.UI.WebControls;
 using ContentExplorer.Models.ViewModels;
 using ContentExplorer.Services;
 
@@ -92,37 +89,6 @@ namespace ContentExplorer.Controllers
             return Json(imageViewModel, JsonRequestBehavior.AllowGet);
         }
 
-        private DirectoryInfo GetCurrentDirectory(string relativePath)
-        {
-            DirectoryInfo directoryInfo = new DirectoryInfo(Path.Combine(ConfigurationManager.AppSettings["BaseDirectory"], ConfigurationManager.AppSettings["ImagesPath"], relativePath));
-
-            return directoryInfo;
-        }
-
-        private IEnumerable<FileInfo> GetMatchingFiles(DirectoryInfo directory, string filter)
-        {
-            FileTypeService fileTypeService = new FileTypeService();
-
-            IEnumerable<FileInfo> validFiles = directory
-                .GetFiles()
-                .Where(file => fileTypeService.IsFileImage(file.Name))
-                .Where(file => ImageMatchesFilter(file, filter))
-                .Select(file => new
-                {
-                    File = file,
-                    Numerics = Regex.Match(file.Name, "[0-9]+")
-                })
-                .OrderBy(fileWithNumerics =>
-                {
-                    int.TryParse(fileWithNumerics.Numerics.Value, out int numericalMatch);
-
-                    return numericalMatch;
-                })
-                .Select(fileWithNumerics => fileWithNumerics.File);
-
-            return validFiles;
-        }
-
         [HttpGet]
         public ViewResult View(string path, int page, string filter = "")
         {
@@ -168,6 +134,37 @@ namespace ContentExplorer.Controllers
             return View();
         }
 
+        private DirectoryInfo GetCurrentDirectory(string relativePath)
+        {
+            DirectoryInfo directoryInfo = new DirectoryInfo(Path.Combine(ConfigurationManager.AppSettings["BaseDirectory"], ConfigurationManager.AppSettings["ImagesPath"], relativePath));
+
+            return directoryInfo;
+        }
+
+        private IEnumerable<FileInfo> GetMatchingFiles(DirectoryInfo directory, string filter)
+        {
+            FileTypeService fileTypeService = new FileTypeService();
+
+            IEnumerable<FileInfo> validFiles = directory
+                .GetFiles()
+                .Where(file => fileTypeService.IsFileImage(file.Name))
+                .Where(file => ImageMatchesFilter(file, filter))
+                .Select(file => new
+                {
+                    File = file,
+                    Numerics = Regex.Match(file.Name, "[0-9]+")
+                })
+                .OrderBy(fileWithNumerics =>
+                {
+                    int.TryParse(fileWithNumerics.Numerics.Value, out int numericalMatch);
+
+                    return numericalMatch;
+                })
+                .Select(fileWithNumerics => fileWithNumerics.File);
+
+            return validFiles;
+        }
+
         private bool ImageMatchesFilter(FileInfo fileInfo, string filter)
         {
             if (filter == null)
@@ -175,16 +172,22 @@ namespace ContentExplorer.Controllers
                 return true;
             }
 
-            string[] filters = filter.ToLowerInvariant().Split('&');
+            string[] filters = filter.ToLowerInvariant().Split(',');
             bool isMatch = true;
 
+            // Make sure the file matches all of our filters
             for (int filterIndex = 0; filterIndex < filters.Length && isMatch; filterIndex++)
             {
-                switch (filter)
+                if (filter.StartsWith("type: "))
                 {
-                    case "gif":
-                    isMatch = fileInfo.Extension.Split('.').Last().Equals("gif", StringComparison.OrdinalIgnoreCase);
-                    break;
+                    // Remove the special tag from the filter
+                    string filterType = filter.Substring("type: ".Length);
+
+                    isMatch = fileInfo.Extension.Split('.').Last().Equals(filterType, StringComparison.OrdinalIgnoreCase);
+                }
+                else
+                {
+                    isMatch = fileInfo.Name.ToLowerInvariant().Contains(filter.ToLowerInvariant());
                 }
             }
 

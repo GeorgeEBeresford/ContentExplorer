@@ -89,14 +89,11 @@
 <div class="sidebar">
     <h2>Filters</h2>
 
-    @if (filter == "gif")
-    {
-        <a href="@Url.Action("Index", new { path = relativeDirectory, page = currentPage })">Animated Gifs: True</a>
-    }
-    else
-    {
-        <a href="@Url.Action("Index", new { path = relativeDirectory, page = currentPage, filter = "gif" })">Animated Gifs: False</a>
-    }
+    <label for="txtFilter">
+        Custom filter
+        <input type="text" id="txtFilter" value="@filter" class="input-sm" data-custom-filter />
+    </label>
+    <button class="btn btn-default" data-apply-filter>Apply Custom Filter</button>
 </div>
 <div class="content_sidebar">
 
@@ -116,7 +113,7 @@
         int videoNumber = (currentPage - 1) * videosPerPage + 1;
 
         <h1>Videos</h1>
-        <ul class="video_list">
+        <ul class="media_list">
 
             @for (int videoIndex = 0; videoIndex < Model.FileInfos.Count; videoIndex++)
             {
@@ -125,10 +122,10 @@
 
                 string linkPath = Url.Action("View", new { path = path, page = videoNumber, filter = filter });
 
-                <li class="video_item">
-                    <a href="@linkPath" target="_blank" class="video_link">
+                <li class="media_item">
+                    <a href="@linkPath" target="_blank" class="media_link">
                         @RenderThumbnail(previewPath, video.Name, Path.Combine(cdn, baseDirectory, path))
-                        <div class="video_name">@video.Name</div>
+                        <div class="media_name">@video.Name</div>
                     </a>
                 </li>
 
@@ -168,3 +165,8 @@
         </div>
     }
 </div>
+
+@section scripts {
+
+    @Scripts.Render("~/bundles/video/index")
+}

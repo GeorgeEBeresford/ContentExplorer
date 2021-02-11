@@ -37,6 +37,15 @@ namespace ContentExplorer
 
             bundles.Add(new ScriptBundle("~/bundles/image/view").Include(
                 "~/Scripts/Image/View.js"));
+
+            bundles.Add(new ScriptBundle("~/bundles/image/index").Include(
+                "~/Scripts/Image/Index.js"));
+
+            bundles.Add(new ScriptBundle("~/bundles/video/view").Include(
+                "~/Scripts/Video/View.js"));
+
+            bundles.Add(new ScriptBundle("~/bundles/video/index").Include(
+                "~/Scripts/Video/Index.js"));
         }
     }
 }

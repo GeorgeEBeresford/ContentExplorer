@@ -62,9 +62,9 @@
     @RenderSteppingStones(video.Directory, baseSiteDirectory, baseDirectory, filter)
 </nav>
 
-<a class="videoview_navbutton" href="@Url.Action("View", new {path = relativeDirectory, page = currentPage - 1, filter = filter})"><</a>
-<div class="videoview">
-    <video controls loop class="videoview_video">
+<a class="mediaview_navbutton" href="@Url.Action("View", new {path = relativeDirectory, page = currentPage - 1, filter = filter})"><</a>
+<div class="mediaview">
+    <video controls loop class="mediaview_video">
         @{
             if (extensionsToMimeTypes.ContainsKey(video.Extension))
             {
@@ -76,9 +76,9 @@
             }
         }
     </video>
-    <div class="videoview_name">@video.Name</div>
+    <div class="mediaview_name">@video.Name</div>
 </div>
-<a class="videoview_navbutton-right" href="@Url.Action("View", new {path = relativeDirectory, page = currentPage + 1, filter = filter})">></a>
+<a class="mediaview_navbutton-right" href="@Url.Action("View", new {path = relativeDirectory, page = currentPage + 1, filter = filter})">></a>
 
 @if (maxPages > 1)
 {

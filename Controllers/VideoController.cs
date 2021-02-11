@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
 using System.Linq;
@@ -116,26 +117,6 @@ namespace ContentExplorer.Controllers
             return Json(true, JsonRequestBehavior.AllowGet);
         }
 
-        private ActionResult RebuildThumbnails(DirectoryInfo directory)
-        {
-            IEnumerable<DirectoryInfo> subDirectories = directory.GetDirectories();
-
-            foreach (DirectoryInfo subDirectory in subDirectories)
-            {
-                RebuildThumbnails(subDirectory);
-            }
-
-            VideoThumbnailService videoThumbnailService = new VideoThumbnailService();
-            IEnumerable<FileInfo> videos = GetMatchingFiles(directory, "");
-            foreach (FileInfo video in videos)
-            {
-                videoThumbnailService.DeleteThumbnailIfExists(video.FullName);
-                videoThumbnailService.CreateThumbnail(video.FullName);
-            }
-
-            return Json(true, JsonRequestBehavior.AllowGet);
-        }
-
         [HttpGet]
         public ActionResult ReformatNames(string path = "")
         {
@@ -153,6 +134,26 @@ namespace ContentExplorer.Controllers
             VideoConversionService videoConversionService = new VideoConversionService();
 
             videoConversionService.ConvertUnplayableVideos(baseDirectory);
+
+            return Json(true, JsonRequestBehavior.AllowGet);
+        }
+
+        private ActionResult RebuildThumbnails(DirectoryInfo directory)
+        {
+            IEnumerable<DirectoryInfo> subDirectories = directory.GetDirectories();
+
+            foreach (DirectoryInfo subDirectory in subDirectories)
+            {
+                RebuildThumbnails(subDirectory);
+            }
+
+            VideoThumbnailService videoThumbnailService = new VideoThumbnailService();
+            IEnumerable<FileInfo> videos = GetMatchingFiles(directory, "");
+            foreach (FileInfo video in videos)
+            {
+                videoThumbnailService.DeleteThumbnailIfExists(video.FullName);
+                videoThumbnailService.CreateThumbnail(video.FullName);
+            }
 
             return Json(true, JsonRequestBehavior.AllowGet);
         }
@@ -190,10 +191,10 @@ namespace ContentExplorer.Controllers
             IEnumerable<FileInfo> validFiles = directory
                 .GetFiles()
                 .Where(file => fileTypeService.IsFileVideo(file.Name))
+                .Where(file => ImageMatchesFilter(file, filter))
                 .OrderBy(file => file.Name)
                 .ThenBy(file =>
                     {
-
                         Match numbersInName = Regex.Match(file.Name, "[0-9]+");
 
                         bool isNumber = int.TryParse(numbersInName.Value, out int numericalMatch);
@@ -203,6 +204,35 @@ namespace ContentExplorer.Controllers
                 );
 
             return validFiles;
+        }
+
+        private bool ImageMatchesFilter(FileInfo fileInfo, string filter)
+        {
+            if (filter == null)
+            {
+                return true;
+            }
+
+            string[] filters = filter.ToLowerInvariant().Split(',');
+            bool isMatch = true;
+
+            // Make sure the file matches all of our filters
+            for (int filterIndex = 0; filterIndex < filters.Length && isMatch; filterIndex++)
+            {
+                if (filter.StartsWith("type: "))
+                {
+                    // Remove the special tag from the filter
+                    string filterType = filter.Substring("type: ".Length);
+
+                    isMatch = fileInfo.Extension.Split('.').Last().Equals(filterType, StringComparison.OrdinalIgnoreCase);
+                }
+                else
+                {
+                    isMatch = fileInfo.Name.ToLowerInvariant().Contains(filter.ToLowerInvariant());
+                }
+            }
+
+            return isMatch;
         }
     }
 }

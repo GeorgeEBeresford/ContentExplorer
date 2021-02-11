@@ -1,121 +1,4 @@
-﻿.image_list {
-  display: block;
-  width: 100%; }
-
-.image_item {
-  display: inline-block;
-  width: 200px;
-  height: 200px;
-  position: relative;
-  border-radius: 4px;
-  overflow: hidden; }
-
-.image_link {
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  display: block;
-  text-decoration: none; }
-
-.image_name {
-  position: absolute;
-  padding: 6px;
-  width: 100%;
-  height: 30px;
-  bottom: 0;
-  overflow-y: hidden;
-  text-overflow: ellipsis;
-  background-color: #383838;
-  opacity: 0.8;
-  color: #cacaca;
-  font-weight: bold;
-  text-align: center;
-  overflow: hidden; }
-
-.imageview {
-  margin-top: 30px;
-  width: 100%;
-  text-align: center; }
-  .imageview_image {
-    display: inline-block;
-    max-width: 90%; }
-    .imageview_image-focused {
-      position: absolute;
-      left: 0;
-      top: 0;
-      z-index: 4; }
-  .imageview_navbutton, .imageview_navbutton-right, .videoview_navbutton-right {
-    width: 5%;
-    height: 100%;
-    position: fixed;
-    background-color: #383838;
-    left: 0;
-    opacity: 0.3;
-    transition: ease opacity 0.3s;
-    top: 0;
-    z-index: 0;
-    cursor: pointer; }
-    .imageview_navbutton:hover, .imageview_navbutton-right:hover, .videoview_navbutton-right:hover {
-      opacity: 1; }
-    .imageview_navbutton-right {
-      left: auto;
-      right: 0; }
-  .imageview_name {
-    font-size: 1.7rem;
-    padding: 8px;
-    margin-top: 10px;
-    font-weight: bold; }
-
-.slideshow_stopper {
-  position: fixed;
-  right: 0;
-  top: 0;
-  width: 30px;
-  height: 30px;
-  background-color: #dedede;
-  font-size: 2rem;
-  z-index: 5;
-  text-align: center;
-  cursor: pointer; }
-  .slideshow_stopper:hover {
-    background-color: #ababab;
-    color: #FFF; }
-
-.directory_list {
-  display: block;
-  width: 100%; }
-
-.directory_item {
-  display: inline-block;
-  width: 300px;
-  height: 300px;
-  position: relative;
-  border-radius: 4px;
-  overflow: hidden; }
-
-.directory_link {
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  display: block;
-  text-decoration: none; }
-
-.directory_name {
-  position: absolute;
-  padding: 4px;
-  width: 100%;
-  height: 44px;
-  bottom: 0;
-  overflow-y: hidden;
-  text-overflow: ellipsis;
-  background-color: #383838;
-  opacity: 0.8;
-  color: #cacaca;
-  font-weight: bold;
-  text-align: center;
-  overflow: hidden; }
-
-.button_list {
+﻿.button_list {
   display: inline-block; }
 
 .button_wrapper {
@@ -201,6 +84,106 @@
     vertical-align: middle;
     text-align: left; }
 
+.directory_list {
+  display: block;
+  width: 100%; }
+
+.directory_item {
+  display: inline-block;
+  width: 300px;
+  height: 300px;
+  position: relative;
+  border-radius: 4px;
+  overflow: hidden; }
+
+.directory_link {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  display: block;
+  text-decoration: none; }
+
+.directory_name {
+  position: absolute;
+  padding: 4px;
+  width: 100%;
+  height: 44px;
+  bottom: 0;
+  overflow-y: hidden;
+  text-overflow: ellipsis;
+  background-color: #383838;
+  opacity: 0.8;
+  color: #cacaca;
+  font-weight: bold;
+  text-align: center;
+  overflow: hidden; }
+
+.media_list {
+  display: block;
+  width: 100%; }
+
+.media_item {
+  display: inline-block;
+  width: 200px;
+  height: 200px;
+  position: relative;
+  border-radius: 4px;
+  overflow: hidden; }
+  .media_item-expanded, .media_item:hover .media_name {
+    max-height: 100%; }
+
+.media_link {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  display: block;
+  text-decoration: none; }
+
+.media_name {
+  position: absolute;
+  padding: 6px;
+  width: 100%;
+  height: auto;
+  max-height: 30px;
+  bottom: 0;
+  overflow-y: hidden;
+  text-overflow: ellipsis;
+  background-color: #383838;
+  opacity: 0.8;
+  color: #cacaca;
+  font-weight: bold;
+  text-align: center;
+  overflow: hidden;
+  transition: ease 0.3s; }
+
+.mediaview {
+  margin-top: 30px;
+  width: 100%;
+  text-align: center; }
+  .mediaview_media {
+    display: inline-block;
+    max-width: 90%; }
+  .mediaview_navbutton, .mediaview_navbutton-right {
+    width: 5%;
+    height: 100%;
+    position: fixed;
+    background-color: #383838;
+    left: 0;
+    opacity: 0.3;
+    transition: ease opacity 0.3s;
+    top: 0;
+    z-index: 0; }
+    .mediaview_navbutton:hover, .mediaview_navbutton-right:hover {
+      opacity: 1; }
+    .mediaview_navbutton-right {
+      left: auto;
+      right: 0; }
+  .mediaview_name {
+    font-size: 1.7rem;
+    padding: 8px;
+    margin-top: 10px;
+    font-weight: bold; }
+
 .video_list {
   display: block;
   width: 100%; }
@@ -266,6 +249,89 @@
     padding: 8px;
     margin-top: 10px;
     font-weight: bold; }
+
+.image_list {
+  display: block;
+  width: 100%; }
+
+.image_item {
+  display: inline-block;
+  width: 200px;
+  height: 200px;
+  position: relative;
+  border-radius: 4px;
+  overflow: hidden; }
+
+.image_link {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  display: block;
+  text-decoration: none; }
+
+.image_name {
+  position: absolute;
+  padding: 6px;
+  width: 100%;
+  height: 30px;
+  bottom: 0;
+  overflow-y: hidden;
+  text-overflow: ellipsis;
+  background-color: #383838;
+  opacity: 0.8;
+  color: #cacaca;
+  font-weight: bold;
+  text-align: center;
+  overflow: hidden; }
+
+.imageview {
+  margin-top: 30px;
+  width: 100%;
+  text-align: center; }
+  .imageview_image {
+    display: inline-block;
+    max-width: 90%; }
+    .imageview_image-focused {
+      position: absolute;
+      left: 0;
+      top: 0;
+      z-index: 4; }
+  .imageview_navbutton, .videoview_navbutton-right, .imageview_navbutton-right {
+    width: 5%;
+    height: 100%;
+    position: fixed;
+    background-color: #383838;
+    left: 0;
+    opacity: 0.3;
+    transition: ease opacity 0.3s;
+    top: 0;
+    z-index: 0;
+    cursor: pointer; }
+    .imageview_navbutton:hover, .videoview_navbutton-right:hover, .imageview_navbutton-right:hover {
+      opacity: 1; }
+    .imageview_navbutton-right {
+      left: auto;
+      right: 0; }
+  .imageview_name {
+    font-size: 1.7rem;
+    padding: 8px;
+    margin-top: 10px;
+    font-weight: bold; }
+
+.slideshow_stopper {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 30px;
+  height: 30px;
+  background-color: #dedede;
+  font-size: 2rem;
+  z-index: 5;
+  text-align: center;
+  cursor: pointer; }
+  .slideshow_stopper:hover {
+    background-color: #ababab;
+    color: #FFF; }
 
 body {
   padding-top: 50px;

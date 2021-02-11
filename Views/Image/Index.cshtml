@@ -62,14 +62,24 @@
 <div class="sidebar">
     <h2>Filters</h2>
 
-    @if (filter == "gif")
+    @if (filter == "type: gif")
     {
-        <a href="@Url.Action("Index", new { path = relativeDirectory, page = currentPage })">Animated Gifs: True</a>
+        <a href="@Url.Action("Index", new {path = relativeDirectory, page = currentPage})">
+            <label>Animated Gifs: True</label>
+        </a>
     }
     else
     {
-        <a href="@Url.Action("Index", new { path = relativeDirectory, page = currentPage, filter = "gif" })">Animated Gifs: False</a>
+        <a href="@Url.Action("Index", new {path = relativeDirectory, page = currentPage, filter = "type: gif"})">
+            <label>Animated Gifs: False</label>
+        </a>
     }
+
+    <label for="txtFilter">
+        Custom filter
+        <input type="text" id="txtFilter" value="@filter" class="input-sm" data-custom-filter />
+    </label>
+    <button class="btn btn-default" data-apply-filter>Apply Custom Filter</button>
 </div>
 <div class="content_sidebar">
 
@@ -89,7 +99,7 @@
         int imageNumber = (currentPage - 1) * imagesPerPage + 1;
 
         <h1>Images</h1>
-        <ul class="image_list">
+        <ul class="media_list">
 
             @for (int imageIndex = 0; imageIndex < Model.FileInfos.Count; imageIndex++)
             {
@@ -101,9 +111,9 @@
 
                 string linkPath = Url.Action("View", new { path = path, page = imageNumber, filter = filter });
 
-                <li class="image_item" style="background-image: url('@thumbnailPath'); background-size: cover">
-                    <a href="@linkPath" class="image_link">
-                        <div class="image_name">@image.Name</div>
+                <li class="media_item" style="background-image: url('@thumbnailPath'); background-size: cover">
+                    <a href="@linkPath" class="media_link">
+                        <div class="media_name">@image.Name</div>
                     </a>
                 </li>
 
@@ -143,3 +153,8 @@
         </div>
     }
 </div>
+
+@section scripts {
+
+    @Scripts.Render("~/bundles/image/index")
+}
