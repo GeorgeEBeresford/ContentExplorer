@@ -351,3 +351,4 @@ MigrationBackup/
 
 # Potentially sensitive files
 Web.config
+App_Data/database.db

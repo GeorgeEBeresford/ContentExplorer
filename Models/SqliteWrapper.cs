@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data;
 using System.Data.Common;
 using System.Linq;
@@ -11,8 +12,26 @@ namespace ContentExplorer.Models
     {
         public SqliteWrapper(string connectionString)
         {
-            SqlConnection = GenerateConnection(connectionString);
+            try
+            {
+                SqlConnection = GenerateConnection(connectionString);
+            }
+            catch (ArgumentException)
+            {
+                // If we've passed the name of a connection string instead, try to get the value instead
+                connectionString = GetConnectionStringFromName(connectionString);
+                SqlConnection = GenerateConnection(connectionString);
+            }
         }
+
+        private string GetConnectionStringFromName(string connectionStringName)
+        {
+            ConnectionStringSettings connectionStringSettings = ConfigurationManager.ConnectionStrings[connectionStringName];
+            string connectionString =connectionStringSettings.ToString();
+
+            return connectionString;
+        }
+
 
         private SqliteConnection SqlConnection { get; }
 

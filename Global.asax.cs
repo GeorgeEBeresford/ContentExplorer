@@ -5,6 +5,7 @@ using System.Web;
 using System.Web.Mvc;
 using System.Web.Optimization;
 using System.Web.Routing;
+using ContentExplorer.Models;
 
 namespace ContentExplorer
 {
@@ -16,6 +17,11 @@ namespace ContentExplorer
             FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
+
+
+            // Initialise any SQLite tables
+            Tag.InitialiseTable();
+            TagLink.InitialiseTable();
         }
     }
 }

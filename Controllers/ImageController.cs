@@ -5,8 +5,10 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Web.Mvc;
+using ContentExplorer.Models;
 using ContentExplorer.Models.ViewModels;
 using ContentExplorer.Services;
+using Microsoft.Ajax.Utilities;
 
 namespace ContentExplorer.Controllers
 {

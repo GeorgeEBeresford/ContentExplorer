@@ -91,9 +91,26 @@
 
     <label for="txtFilter">
         Custom filter
-        <input type="text" id="txtFilter" value="@filter" class="input-sm" data-custom-filter />
+        <input class="input-sm" type="text" id="txtFilter" value="@filter" data-custom-filter />
     </label>
     <button class="btn btn-default" data-apply-filter>Apply Custom Filter</button>
+
+    <h2>Actions</h2>
+    <a href="@Url.Action("RebuildThumbnails", "Video", new {path = path})" target="_blank">
+        <div class="btn btn-default">
+            Rebuild Thumbnails
+        </div>
+    </a>
+    <a href="@Url.Action("ReformatNames", "Video", new {path = path})" target="_blank">
+        <div class="btn btn-default">
+            Reformat Names
+        </div>
+    </a>
+    <a href="@Url.Action("ConvertUnplayableVideos", "Video", new {path = path})" target="_blank">
+        <div class="btn btn-default">
+            Convert Unplayable Videos
+        </div>
+    </a>
 </div>
 <div class="content_sidebar">
 

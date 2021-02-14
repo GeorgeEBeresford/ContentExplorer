@@ -13,6 +13,7 @@ namespace ContentExplorer.Models
 
         public Tag(IDictionary<string, object> rowValues) : this()
         {
+            TagId = Convert.ToInt32(rowValues["TagId"]);
             TagName = Convert.ToString(rowValues["TagName"]);
         }
 
@@ -23,7 +24,6 @@ namespace ContentExplorer.Models
         {
             string query = @"SELECT Tags.TagId, Tags.TagName
                                 FROM Tags";
-
 
             ICollection<IDictionary<string, object>> dataRows;
             using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
@@ -39,6 +39,45 @@ namespace ContentExplorer.Models
                 .ToList();
 
             return tags;
+        }
+
+        public static Tag GetByTagName(string tagName)
+        {
+            string query = @"SELECT TagId, TagName
+                                FROM Tags
+                                WHERE TagName = @TagName";
+
+
+            ICollection<IDictionary<string, object>> dataRows;
+            using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
+            {
+                dbContext.GetDataRows(query);
+
+                dataRows = dbContext.GetDataRows(query, SqliteWrapper.GenerateParameter("@TagName", tagName));
+            }
+
+            Tag tag = dataRows.Select(dataRow =>
+                    new Tag(dataRow)
+                )
+                .FirstOrDefault();
+
+            return tag;
+        }
+
+        public static bool InitialiseTable()
+        {
+            string query = @"CREATE TABLE IF NOT EXISTS Tags (
+                TagId INT,
+                TagName VARCHAR(60)
+            )";
+
+            bool isSuccess;
+            using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
+            {
+                isSuccess = dbContext.ExecuteNonQuery(query);
+            }
+
+            return isSuccess;
         }
 
         public static ICollection<Tag> GetByFileName(string fileName)
