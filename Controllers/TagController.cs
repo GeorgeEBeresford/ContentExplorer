@@ -9,67 +9,111 @@ namespace ContentExplorer.Controllers
 {
     public class TagController : Controller
     {
+        [Route(Name = "AddTags")]
+        [HttpPost]
+        public JsonResult AddTagsJson(string filePath, string tags)
+        {
+            ICollection<string> tagNames = tags.Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+            bool isSuccess = AddTags(filePath, tagNames);
+
+            return Json(isSuccess);
+        }
+
         [HttpPost]
         public JsonResult SetTags(string filePath, string tags)
+        {
+            ICollection<string> tagNames = tags.Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+
+            AddTags(filePath, tagNames);
+            RemoveUnusedTagLinks(filePath, tagNames);
+
+            return Json(true);
+        }
+
+        private bool AddTags(string filePath, IEnumerable<string> tagNames)
         {
             FileInfo fileInfo = new FileInfo(filePath);
 
             if (fileInfo.Exists == false)
             {
-                return Json(false);
+                return false;
             }
 
             ICollection<Tag> tagsByFileName = Tag.GetByFileName(filePath);
-            ICollection<string> splitTags = tags.Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
 
-            foreach (string splitTag in splitTags)
+            bool isSuccess = true;
+            foreach (string tagName in tagNames)
             {
-                Tag savedTag = Tag.GetByTagName(splitTag);
+                Tag savedTag = GetOrCreateTag(tagName);
 
                 if (savedTag == null)
                 {
-                    // If the tag hasn't been saved yet, save it
-                    savedTag = new Tag
-                    {
-                        TagName = splitTag
-                    };
-
-                    bool isSuccess = savedTag.Create();
-
-                    if (!isSuccess)
-                    {
-                        return Json(false);
-                    }
-
-                    // Add it to the collection so we can reference it later
-                    tagsByFileName.Add(savedTag);
+                    isSuccess = false;
                 }
 
-                bool tagLinkExists = tagsByFileName.Any(tagByFileName => tagByFileName.TagName == splitTag);
-
-                if (!tagLinkExists)
+                if (isSuccess)
                 {
-                    // If the tag link isn't saved yet, save it
-                    TagLink tagLink = new TagLink
-                    {
-                        FileName = filePath,
-                        TagId = savedTag.TagId
-                    };
+                    // Add it to the collection so we can reference it later
+                    tagsByFileName.Add(savedTag);
+                    bool tagLinkExists = tagsByFileName.Any(tagByFileName => tagByFileName.TagName == tagName);
 
-                    bool isSuccess = tagLink.Create();
-
-                    if (!isSuccess)
+                    if (tagLinkExists == false)
                     {
-                        return Json(false);
+                        TagLink savedTagLink = LinkFileToTag(filePath, savedTag.TagId);
+
+                        if (savedTagLink == null)
+                        {
+                            isSuccess = false;
+                        }
                     }
                 }
             }
 
+            return isSuccess;
+        }
+
+        private TagLink LinkFileToTag(string filePath, int tagId)
+        {
+            // If the tag link isn't saved yet, save it
+            TagLink tagLink = new TagLink
+            {
+                FileName = filePath,
+                TagId = tagId
+            };
+
+            bool isSuccess = tagLink.Create();
+
+            return isSuccess ? tagLink : null;
+        }
+
+        private Tag GetOrCreateTag(string tagName)
+        {
+            Tag savedTag = Tag.GetByTagName(tagName);
+
+            if (savedTag != null)
+            {
+                return savedTag;
+            }
+
+            // If the tag hasn't been saved yet, save it
+            savedTag = new Tag
+            {
+                TagName = tagName
+            };
+
+            bool isSuccess = savedTag.Create();
+            return isSuccess ? savedTag : null;
+        }
+
+        private bool RemoveUnusedTagLinks(string filePath, ICollection<string> requestedTags)
+        {
+            ICollection<Tag> tagsByFileName = Tag.GetByFileName(filePath);
             ICollection<TagLink> tagLinks = TagLink.GetByFileName(filePath);
 
+            bool isSuccess = true;
             foreach (Tag tag in tagsByFileName)
             {
-                bool isTagRequested = splitTags.Any(splitTag => tag.TagName == splitTag);
+                bool isTagRequested = requestedTags.Any(splitTag => tag.TagName == splitTag);
 
                 if (!isTagRequested)
                 {
@@ -78,13 +122,12 @@ namespace ContentExplorer.Controllers
                     // If the tag has not been requested, delete it from our saved links
                     if (matchingTagLink != null)
                     {
-                        bool isSuccess = matchingTagLink.Delete();
-                        return Json(false);
+                        isSuccess = matchingTagLink.Delete();
                     }
                 }
             }
 
-            return Json(true);
+            return isSuccess;
         }
     }
 }

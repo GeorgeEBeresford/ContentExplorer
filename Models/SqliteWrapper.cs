@@ -132,7 +132,7 @@ namespace ContentExplorer.Models
             {
                 connection.Open();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
             }
 
