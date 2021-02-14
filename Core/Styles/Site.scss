@@ -1,11 +1,13 @@
-﻿@import "Modules/_Button.scss";
-@import "Modules/_Sidebar.scss";
-@import "Modules/_SteppingStone.scss";
-@import "Modules/_Controls.scss";
-@import "Modules/_Directory.scss";
-@import "Modules/_Media.scss";
-@import "Modules/_Video.scss";
-@import "Modules/_Image.scss";
+﻿@import "Modules/Bootstrap";
+@import "Modules/BootstrapTheme";
+@import "Modules/Button";
+@import "Modules/Sidebar";
+@import "Modules/SteppingStone";
+@import "Modules/Controls";
+@import "Modules/Directory";
+@import "Modules/Media";
+@import "Modules/Video";
+@import "Modules/Image";
 
 body {
     padding-top: 50px;

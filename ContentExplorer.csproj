@@ -171,50 +171,40 @@
     <Compile Include="Services\VideoThumbnailService.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Content\bootstrap-theme.css" />
-    <Content Include="Content\bootstrap-theme.min.css" />
-    <Content Include="Content\bootstrap.css" />
-    <Content Include="Content\bootstrap.min.css" />
-    <Content Include="Content\Images\ajax-loader.gif" />
-    <Content Include="Content\Site.css">
+    <Content Include="Core\Images\ajax-loader.gif" />
+    <Content Include="Core\Styles\Modules\_BootstrapTheme.scss" />
+    <None Include="Core\Styles\Modules\_Bootstrap.scss" />
+    <Content Include="Core\Styles\Site.css">
       <DependentUpon>Site.scss</DependentUpon>
     </Content>
-    <Content Include="Content\Site.min.css">
+    <Content Include="Core\Styles\Site.min.css">
       <DependentUpon>Site.css</DependentUpon>
     </Content>
     <Content Include="favicon.ico" />
-    <Content Include="fonts\glyphicons-halflings-regular.svg" />
+    <Content Include="Core\Fonts\glyphicons-halflings-regular.svg" />
     <Content Include="Global.asax" />
-    <Content Include="Scripts\Video\Index.js" />
-    <Content Include="Scripts\Video\View.js" />
-    <Content Include="Scripts\Image\Index.js" />
-    <Content Include="Scripts\Image\View.js" />
-    <Content Include="Scripts\Common\bootstrap.js" />
-    <Content Include="Scripts\Common\bootstrap.min.js" />
-    <Content Include="Content\Site.scss" />
-    <Content Include="Content\Modules\_Directory.scss" />
-    <Content Include="Content\Modules\_Image.scss" />
+    <Content Include="Core\Scripts\Video\Index.js" />
+    <Content Include="Core\Scripts\Video\View.js" />
+    <Content Include="Core\Scripts\Image\Index.js" />
+    <Content Include="Core\Scripts\Image\View.js" />
+    <Content Include="Core\Scripts\Common\bootstrap.js" />
+    <Content Include="Core\Scripts\Common\bootstrap.min.js" />
+    <Content Include="Core\Styles\Site.scss" />
+    <Content Include="Core\Styles\Modules\_Directory.scss" />
+    <Content Include="Core\Styles\Modules\_Image.scss" />
     <None Include="compilerconfig.json" />
     <None Include="compilerconfig.json.defaults">
       <DependentUpon>compilerconfig.json</DependentUpon>
     </None>
-    <Content Include="Content\Modules\_Button.scss" />
-    <Content Include="Content\Modules\_Sidebar.scss" />
-    <Content Include="Content\Modules\_SteppingStone.scss" />
-    <Content Include="Content\Modules\_Video.scss" />
-    <Content Include="Content\Modules\_Controls.scss" />
-    <Content Include="Content\Modules\_Media.scss" />
-    <None Include="Scripts\Common\jquery-3.4.1.intellisense.js" />
-    <Content Include="Scripts\Common\jquery-3.4.1.js" />
-    <Content Include="Scripts\Common\jquery-3.4.1.min.js" />
-    <Content Include="Scripts\Common\jquery-3.4.1.slim.js" />
-    <Content Include="Scripts\Common\jquery-3.4.1.slim.min.js" />
-    <None Include="Scripts\Common\jquery.validate-vsdoc.js" />
-    <Content Include="Scripts\Common\jquery.validate.js" />
-    <Content Include="Scripts\Common\jquery.validate.min.js" />
-    <Content Include="Scripts\Common\jquery.validate.unobtrusive.js" />
-    <Content Include="Scripts\Common\jquery.validate.unobtrusive.min.js" />
-    <Content Include="Scripts\Common\modernizr-2.8.3.js" />
+    <Content Include="Core\Styles\Modules\_Button.scss" />
+    <Content Include="Core\Styles\Modules\_Sidebar.scss" />
+    <Content Include="Core\Styles\Modules\_SteppingStone.scss" />
+    <Content Include="Core\Styles\Modules\_Video.scss" />
+    <Content Include="Core\Styles\Modules\_Controls.scss" />
+    <Content Include="Core\Styles\Modules\_Media.scss" />
+    <None Include="Core\Scripts\Common\jquery-3.4.1.intellisense.js" />
+    <Content Include="Core\Scripts\Common\jquery-3.4.1.js" />
+    <Content Include="Core\Scripts\Common\modernizr-2.8.3.js" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
@@ -236,17 +226,11 @@
     <Folder Include="App_Data\" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="fonts\glyphicons-halflings-regular.woff2" />
-    <Content Include="fonts\glyphicons-halflings-regular.woff" />
-    <Content Include="fonts\glyphicons-halflings-regular.ttf" />
-    <Content Include="fonts\glyphicons-halflings-regular.eot" />
-    <Content Include="Content\bootstrap.min.css.map" />
-    <Content Include="Content\bootstrap.css.map" />
-    <Content Include="Content\bootstrap-theme.min.css.map" />
-    <Content Include="Content\bootstrap-theme.css.map" />
+    <Content Include="Core\Fonts\glyphicons-halflings-regular.woff2" />
+    <Content Include="Core\Fonts\glyphicons-halflings-regular.woff" />
+    <Content Include="Core\Fonts\glyphicons-halflings-regular.ttf" />
+    <Content Include="Core\Fonts\glyphicons-halflings-regular.eot" />
     <None Include="packages.config" />
-    <Content Include="Scripts\Common\jquery-3.4.1.slim.min.map" />
-    <Content Include="Scripts\Common\jquery-3.4.1.min.map" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
