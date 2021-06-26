@@ -7127,10 +7127,25 @@ fieldset[disabled] .btn-danger.active {
   width: 100%;
   height: 100%; }
 
+.tagList {
+  margin-top: 10px;
+  max-height: 450px;
+  min-height: 25px;
+  list-style: none;
+  font-weight: bold;
+  margin-left: 0;
+  padding-left: 0;
+  overflow-y: auto;
+  text-overflow: ellipsis;
+  white-space: nowrap; }
+  .tagList_item:hover {
+    background-color: #BBB;
+    cursor: pointer; }
+
 .sidebar {
   width: 300px;
   position: fixed;
-  background-color: #a8a8a8;
+  background-color: #ababab;
   padding-left: 15px;
   padding-right: 15px;
   height: 100%;

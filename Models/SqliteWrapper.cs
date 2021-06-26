@@ -142,8 +142,8 @@ namespace ContentExplorer.Models
         private ICollection<IDictionary<string, object>> GetDataRows(SqliteDataReader dataReader)
         {
             DataTable table = dataReader.GetSchemaTable();
-            ICollection<string> columnNames = dataReader.GetColumnSchema()
-                .Select(column => column.ColumnName)
+            ICollection<string> columnNames = Enumerable.Range(0, dataReader.FieldCount)
+                .Select(dataReader.GetName)
                 .ToArray();
 
             ICollection<IDictionary<string, object>> dataRows = new List<IDictionary<string, object>>();

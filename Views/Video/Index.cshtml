@@ -66,8 +66,11 @@
 
     <li class="directory_item" style="background-image: url('@thumbnailPath'); background-size: cover">
         <a href="@Url.Action("Index", new {path = Path.Combine(path, directory.Name)})" class="directory_link">
-            <div class="directory_name">@directory.Name</div>
         </a>
+        <label class="media_name">
+            @directory.Name
+            <input type="checkbox" data-tag-selector data-tag-type="directory" data-path="@(directory.FullName)" />
+        </label>
     </li>
 }
 
@@ -82,6 +85,8 @@
     <a class="steppingstone_item" href="@Url.Action("Index", new { path = parentDirectory.FullName.Substring(baseSiteDirectory.Length + videoDirectory.Length + 1), page = page, filter = filter })">@(parentDirectory.Name)</a>
 }
 
+<input data-directory-name type="hidden" value="@(relativeDirectory.FullName)" />
+
 <nav class="steppingstone_list">
     @RenderSteppingStones(relativeDirectory, baseSiteDirectory, baseDirectory, currentPage, filter)
 </nav>
@@ -91,28 +96,52 @@
 
     <label for="txtFilter">
         Custom filter
-        <input class="input-sm" type="text" id="txtFilter" value="@filter" data-custom-filter />
+        <input type="text" id="txtFilter" value="@filter" class="input-sm" data-custom-filter />
+        <button style="@(filter != "" ? "display: inline-block" : "display: none")" data-clear-filter>X</button>
     </label>
     <button class="btn btn-default" data-apply-filter>Apply Custom Filter</button>
 
-    <h2>Actions</h2>
-    <a href="@Url.Action("RebuildThumbnails", "Video", new {path = path})" target="_blank">
-        <div class="btn btn-default">
-            Rebuild Thumbnails
-        </div>
-    </a>
-    <a href="@Url.Action("ReformatNames", "Video", new {path = path})" target="_blank">
-        <div class="btn btn-default">
-            Reformat Names
-        </div>
-    </a>
-    <a href="@Url.Action("ConvertUnplayableVideos", "Video", new {path = path})" target="_blank">
-        <div class="btn btn-default">
-            Convert Unplayable Videos
-        </div>
-    </a>
+    <ul class="tagList" data-tags-for-folder>
+    </ul>
+
+    @if (Model.FileInfos.Any() || Model.DirectoryInfos.Any())
+    {
+        <h2>Add Tags</h2>
+        <label class="input-group">
+            Tag Name
+            <input class="input-sm" type="text" data-tag-name />
+            <button class="btn btn-default" data-add-tag>Add Tags</button>
+        </label>
+    }
 </div>
 <div class="content_sidebar">
+
+    @if (Model.DirectoryInfos.Any() || Model.FileInfos.Any())
+    {
+        <div class="btn-block">
+            <a class="btn btn-default" href="@Url.Action("RebuildThumbnails", "Video", new {path = path})" target="_blank">
+                <div class="btn btn-default">
+                    Rebuild Thumbnails
+                </div>
+            </a>
+            <a class="btn btn-default" href="@Url.Action("ReformatNames", "Video", new {path = path})" target="_blank">
+                <div class="btn btn-default">
+                    Reformat Names
+                </div>
+            </a>
+            <a class="btn btn-default" href="@Url.Action("ConvertUnplayableVideos", "Video", new {path = path})" target="_blank">
+                <div class="btn btn-default">
+                    Convert Unplayable Videos
+                </div>
+            </a>
+        </div>
+
+        <div class="btn-block">
+            <button class="btn btn-primary" data-select-all>Select All</button>
+            <button class="btn btn-default" data-select-none>Select None</button>
+        </div>
+    }
+
 
     @if (Model.DirectoryInfos.Any())
     {
@@ -142,8 +171,11 @@
                 <li class="media_item">
                     <a href="@linkPath" target="_blank" class="media_link">
                         @RenderThumbnail(previewPath, video.Name, Path.Combine(cdn, baseDirectory, path))
-                        <div class="media_name">@video.Name</div>
                     </a>
+                    <label class="media_name">
+                        @video.Name
+                        <input type="checkbox" data-tag-selector data-tag-type="file" data-path="@(video.FullName)" />
+                    </label>
                 </li>
 
                 videoNumber++;

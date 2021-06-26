@@ -1,0 +1,17 @@
+﻿.tagList {
+    margin-top: 10px;
+    max-height: 450px;
+    min-height: 25px;
+    list-style: none;
+    font-weight: bold;
+    margin-left: 0;
+    padding-left: 0;
+    overflow-y: auto;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &_item:hover {
+        background-color: #BBB;
+        cursor: pointer;
+    }
+}

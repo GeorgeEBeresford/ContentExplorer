@@ -32,15 +32,19 @@ namespace ContentExplorer
                 "~/Core/Scripts/Common/bootstrap.js"));
 
             bundles.Add(new ScriptBundle("~/bundles/image/view").Include(
+                "~/Core/Scripts/Common/FileIndex.js",
                 "~/Core/Scripts/Image/View.js"));
 
             bundles.Add(new ScriptBundle("~/bundles/image/index").Include(
+                "~/Core/Scripts/Common/FileIndex.js",
                 "~/Core/Scripts/Image/Index.js"));
 
             bundles.Add(new ScriptBundle("~/bundles/video/view").Include(
+                "~/Core/Scripts/Common/FileIndex.js",
                 "~/Core/Scripts/Video/View.js"));
 
             bundles.Add(new ScriptBundle("~/bundles/video/index").Include(
+                "~/Core/Scripts/Common/FileIndex.js",
                 "~/Core/Scripts/Video/Index.js"));
         }
     }

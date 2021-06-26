@@ -49,17 +49,23 @@
     thumbnailPath = thumbnailPath.Replace("'", "%27");
 
     <li class="directory_item" style="background-image: url('@thumbnailPath'); background-size: cover; background-position: center center">
-        <a href="@Url.Action("Index", new {path = Path.Combine(path, directory.Name)})" class="directory_link">
-            <div class="directory_name">@directory.Name</div>
+        <a href="@Url.Action("Index", new { path = Path.Combine(path, directory.Name), ViewBag.Filter })" class="directory_link">
         </a>
+        <label class="media_name">
+            @directory.Name
+            <input type="checkbox" data-tag-selector data-tag-type="directory" data-path="@(directory.FullName)" />
+        </label>
     </li>
 }
+
+<input data-directory-name type="hidden" value="@(relativeDirectory.FullName)" />
 
 <nav class="steppingstone_list">
     @RenderSteppingStones(relativeDirectory, baseSiteDirectory, baseDirectory, currentPage, filter)
 </nav>
 
 <div class="sidebar">
+
     <h2>Filters</h2>
 
     @if (filter == "type: gif")
@@ -78,10 +84,32 @@
     <label for="txtFilter">
         Custom filter
         <input type="text" id="txtFilter" value="@filter" class="input-sm" data-custom-filter />
+        <button style="@(filter != "" ? "display: inline-block" : "display: none")" data-clear-filter>X</button>
     </label>
     <button class="btn btn-default" data-apply-filter>Apply Custom Filter</button>
+
+    <ul class="tagList" data-tags-for-folder>
+    </ul>
+
+    @if (Model.FileInfos.Any() || Model.DirectoryInfos.Any())
+    {
+        <h2>Add Tags</h2>
+        <label class="input-group">
+            Tag Name
+            <input class="input-sm" type="text" data-tag-name />
+            <button class="btn btn-default" data-add-tag>Add Tags</button>
+        </label>
+    }
 </div>
-<div class="content_sidebar">
+<div class="content_sidebar panel">
+
+    @if (Model.FileInfos.Any() || Model.DirectoryInfos.Any())
+    {
+        <div class="btn-block">
+            <button class="btn btn-primary" data-select-all>Select All</button>
+            <button class="btn btn-default" data-select-none>Select None</button>
+        </div>
+    }
 
     @if (Model.DirectoryInfos.Any())
     {
@@ -113,8 +141,11 @@
 
                 <li class="media_item" style="background-image: url('@thumbnailPath'); background-size: cover">
                     <a href="@linkPath" class="media_link">
-                        <div class="media_name">@image.Name</div>
                     </a>
+                    <label class="media_name">
+                        @image.Name
+                        <input type="checkbox" data-tag-selector data-tag-type="file" data-path="@(image.FullName)" />
+                    </label>
                 </li>
 
                 imageNumber++;
@@ -122,9 +153,24 @@
         </ul>
     }
 
+    @if (Model.FileInfos.Any() || Model.DirectoryInfos.Any())
+    {
+        <div class="btn-block">
+            <button class="btn btn-primary" data-select-all>Select All</button>
+            <button class="btn btn-default" data-select-none>Select None</button>
+        </div>
+    }
+
     @if (Model.FileInfos.Any() == false && Model.DirectoryInfos.Any() == false)
     {
-        <h1>No files found</h1>
+        if (filter == "")
+        {
+            <h1>No files found</h1>
+        }
+        else
+        {
+            <h1>No files found with filter @filter</h1>
+        }
     }
 
     @{
@@ -152,13 +198,6 @@
             </div>
         </div>
     }
-
-    <label class="input-group">
-        Tag Name
-        <input class="input-sm" type="text" data-tag-name />
-        <button class="btn btn-default" data-add-tag>Add Tag</button>
-    </label>
-    <button class="btn btn-primary hidden" data-save-changes>Save Changes</button>
 </div>
 
 @section scripts {

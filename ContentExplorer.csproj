@@ -16,15 +16,15 @@
     <AssemblyName>ContentExplorer</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <MvcBuildViews>false</MvcBuildViews>
-    <UseIISExpress>true</UseIISExpress>
-    <Use64BitIISExpress />
-    <IISExpressSSLPort>44329</IISExpressSSLPort>
-    <IISExpressAnonymousAuthentication />
-    <IISExpressWindowsAuthentication />
-    <IISExpressUseClassicPipelineMode />
     <UseGlobalApplicationHostFile />
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
+    <UseIISExpress>false</UseIISExpress>
+    <Use64BitIISExpress />
+    <IISExpressSSLPort />
+    <IISExpressAnonymousAuthentication />
+    <IISExpressWindowsAuthentication />
+    <IISExpressUseClassicPipelineMode />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -172,6 +172,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Core\Images\ajax-loader.gif" />
+    <Content Include="Core\Scripts\Common\FileIndex.js" />
     <Content Include="Core\Styles\Modules\_BootstrapTheme.scss" />
     <None Include="Core\Styles\Modules\_Bootstrap.scss" />
     <Content Include="Core\Styles\Site.css">
@@ -230,6 +231,7 @@
     <Content Include="Core\Fonts\glyphicons-halflings-regular.woff" />
     <Content Include="Core\Fonts\glyphicons-halflings-regular.ttf" />
     <Content Include="Core\Fonts\glyphicons-halflings-regular.eot" />
+    <Content Include="Core\Styles\Modules\_Tags.scss" />
     <None Include="packages.config" />
   </ItemGroup>
   <PropertyGroup>
@@ -286,9 +288,9 @@
         <WebProjectProperties>
           <UseIIS>True</UseIIS>
           <AutoAssignPort>True</AutoAssignPort>
-          <DevelopmentServerPort>60448</DevelopmentServerPort>
+          <DevelopmentServerPort>80</DevelopmentServerPort>
           <DevelopmentServerVPath>/</DevelopmentServerVPath>
-          <IISUrl>http://localhost:44329/</IISUrl>
+          <IISUrl>http://localhost/</IISUrl>
           <NTLMAuthentication>False</NTLMAuthentication>
           <UseCustomServer>False</UseCustomServer>
           <CustomServerUrl>

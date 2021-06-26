@@ -9,25 +9,89 @@ namespace ContentExplorer.Controllers
 {
     public class TagController : Controller
     {
-        [Route(Name = "AddTags")]
         [HttpPost]
-        public JsonResult AddTagsJson(string filePath, string tags)
+        public JsonResult AddTagsToFiles(string[] filePaths, string[] tags)
         {
-            ICollection<string> tagNames = tags.Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
-            bool isSuccess = AddTags(filePath, tagNames);
+            // Filter inputs that would make no sense
+            filePaths = filePaths.Where(filePath => filePath != "").ToArray();
+            tags = tags.Where(tag => tag != "").Select(tag => tag.Trim()).ToArray();
+
+            bool isSuccess = true;
+            foreach(string filePath in filePaths)
+            {
+                isSuccess &= AddTags(filePath, tags);
+            }
 
             return Json(isSuccess);
         }
 
         [HttpPost]
-        public JsonResult SetTags(string filePath, string tags)
+        public JsonResult AddTagsToDirectories(string[] directoryPaths, string[] tags)
         {
-            ICollection<string> tagNames = tags.Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+            // Filter inputs that would make no sense
+            directoryPaths = directoryPaths.Where(filePath => filePath != "").ToArray();
+            tags = tags.Where(tag => tag != "").Select(tag => tag.Trim()).ToArray();
 
-            AddTags(filePath, tagNames);
-            RemoveUnusedTagLinks(filePath, tagNames);
+            bool isSuccess = true;
+            foreach (string directoryPath in directoryPaths)
+            {
+                DirectoryInfo directory = new DirectoryInfo(directoryPath);
+                if (directory.Exists)
+                {
+                    FileInfo[] subFiles = directory.GetFiles("*.*", SearchOption.AllDirectories);
+                    foreach(FileInfo subFile in subFiles)
+                    {
+                        isSuccess &= AddTags(subFile.FullName, tags);
+                    }
+                }
+            }
 
-            return Json(true);
+            return Json(isSuccess);
+        }
+
+        [HttpPost]
+        public JsonResult SetTags(string[] filePaths, string[] tags)
+        {
+            // Filter inputs that would make no sense
+            filePaths = filePaths.Where(filePath => filePath != "").ToArray();
+            tags = tags.Where(tag => tag != "").ToArray();
+
+            bool isSuccess = true;
+            foreach (string filePath in filePaths)
+            {
+                isSuccess &= AddTags(filePath, tags);
+                isSuccess &= RemoveUnusedTagLinks(filePath, tags);
+            }
+
+            return Json(isSuccess);
+        }
+        
+        [HttpGet]
+        public JsonResult GetDirectoryTags(string directoryName)
+        {
+            ICollection<Tag> tags = Tag.GetByDirectory(directoryName)
+                .OrderBy(tag => tag.TagName)
+                .ToArray();
+
+            return Json(tags, JsonRequestBehavior.AllowGet);
+        }
+
+        public JsonResult DeleteAllTags()
+        {
+            IEnumerable<Tag> tags = Tag.GetAll();
+
+            foreach (Tag tag in tags)
+            {
+                IEnumerable<TagLink> tagLinks = TagLink.GetByTagName(tag.TagName);
+                foreach(TagLink tagLink in tagLinks)
+                {
+                    tagLink.Delete();
+                }
+
+                tag.Delete();
+            }
+
+            return Json(true, JsonRequestBehavior.AllowGet);
         }
 
         private bool AddTags(string filePath, IEnumerable<string> tagNames)
@@ -39,7 +103,7 @@ namespace ContentExplorer.Controllers
                 return false;
             }
 
-            ICollection<Tag> tagsByFileName = Tag.GetByFileName(filePath);
+            ICollection<Tag> tagsByFileName = Tag.GetByFile(filePath);
 
             bool isSuccess = true;
             foreach (string tagName in tagNames)
@@ -53,8 +117,6 @@ namespace ContentExplorer.Controllers
 
                 if (isSuccess)
                 {
-                    // Add it to the collection so we can reference it later
-                    tagsByFileName.Add(savedTag);
                     bool tagLinkExists = tagsByFileName.Any(tagByFileName => tagByFileName.TagName == tagName);
 
                     if (tagLinkExists == false)
@@ -64,6 +126,10 @@ namespace ContentExplorer.Controllers
                         if (savedTagLink == null)
                         {
                             isSuccess = false;
+                        }
+                        else
+                        {
+                            tagsByFileName.Add(savedTag);
                         }
                     }
                 }
@@ -77,7 +143,7 @@ namespace ContentExplorer.Controllers
             // If the tag link isn't saved yet, save it
             TagLink tagLink = new TagLink
             {
-                FileName = filePath,
+                FilePath = filePath,
                 TagId = tagId
             };
 
@@ -107,8 +173,8 @@ namespace ContentExplorer.Controllers
 
         private bool RemoveUnusedTagLinks(string filePath, ICollection<string> requestedTags)
         {
-            ICollection<Tag> tagsByFileName = Tag.GetByFileName(filePath);
-            ICollection<TagLink> tagLinks = TagLink.GetByFileName(filePath);
+            ICollection<Tag> tagsByFileName = Tag.GetByFile(filePath);
+            ICollection<TagLink> tagLinks = TagLink.GetByFile(filePath);
 
             bool isSuccess = true;
             foreach (Tag tag in tagsByFileName)

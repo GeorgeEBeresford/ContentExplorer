@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Web.Mvc;
+using ContentExplorer.Models;
 using ContentExplorer.Models.ViewModels;
 using ContentExplorer.Services;
 
@@ -13,7 +14,7 @@ namespace ContentExplorer.Controllers
     public class VideoController : Controller
     {
         [HttpGet]
-        public ViewResult Index(string path = "", int? page = 1, string filter = null)
+        public ActionResult Index(string path = "", int? page = 1, string filter = null)
         {
             if (page == null || page < 1)
             {
@@ -36,6 +37,12 @@ namespace ContentExplorer.Controllers
             }
 
             DirectoryInfo directoryInfo = GetCurrentDirectory(path);
+
+            if (directoryInfo.Exists == false)
+            {
+                return RedirectToAction("Index", new { page, filter });
+            }
+
             ICollection<FileInfo> validFiles = GetMatchingFiles(directoryInfo, filter).ToList();
 
             if (page > validFiles.Count)
@@ -191,7 +198,7 @@ namespace ContentExplorer.Controllers
             IEnumerable<FileInfo> validFiles = directory
                 .GetFiles()
                 .Where(file => fileTypeService.IsFileVideo(file.Name))
-                .Where(file => ImageMatchesFilter(file, filter))
+                .Where(file => VideoMatchesFilter(file, filter))
                 .OrderBy(file => file.Name)
                 .ThenBy(file =>
                     {
@@ -206,29 +213,42 @@ namespace ContentExplorer.Controllers
             return validFiles;
         }
 
-        private bool ImageMatchesFilter(FileInfo fileInfo, string filter)
+        private bool VideoMatchesFilter(FileInfo fileInfo, string filterString)
         {
-            if (filter == null)
+            if (string.IsNullOrEmpty(filterString))
             {
                 return true;
             }
 
-            string[] filters = filter.ToLowerInvariant().Split(',');
+            string[] filters = filterString.ToLowerInvariant().Split(',');
             bool isMatch = true;
 
             // Make sure the file matches all of our filters
             for (int filterIndex = 0; filterIndex < filters.Length && isMatch; filterIndex++)
             {
-                if (filter.StartsWith("type: "))
+                string filter = filters[filterIndex];
+
+                if (filter == "")
+                {
+                    isMatch = true;
+                }
+                else if (filter.StartsWith("type:"))
                 {
                     // Remove the special tag from the filter
-                    string filterType = filter.Substring("type: ".Length);
+                    string filterType = filter.Substring("type:".Length).Trim();
 
                     isMatch = fileInfo.Extension.Split('.').Last().Equals(filterType, StringComparison.OrdinalIgnoreCase);
                 }
+                else if (filter.StartsWith("name:"))
+                {
+                    // Remove the special tag from the filter
+                    string filterName = filter.Substring("name:".Length).Trim();
+
+                    isMatch = fileInfo.Name.ToLowerInvariant().Contains(filterName.ToLowerInvariant());
+                }
                 else
                 {
-                    isMatch = fileInfo.Name.ToLowerInvariant().Contains(filter.ToLowerInvariant());
+                    isMatch = Tag.GetByFile(fileInfo.FullName).Any(tag => tag.TagName.Equals(filter, StringComparison.OrdinalIgnoreCase));
                 }
             }
 

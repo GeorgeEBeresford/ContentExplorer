@@ -15,7 +15,7 @@ namespace ContentExplorer.Controllers
     public class ImageController : Controller
     {
         [HttpGet]
-        public ViewResult Index(string path = "", int? page = 1, string filter = null)
+        public ActionResult Index(string path = "", int? page = 1, string filter = null)
         {
             if (page == null || page < 1)
             {
@@ -38,7 +38,12 @@ namespace ContentExplorer.Controllers
             }
 
             DirectoryInfo directoryInfo = GetCurrentDirectory(path);
-            ICollection<FileInfo> validFiles = GetMatchingFiles(directoryInfo, filter).ToList();
+
+            if (directoryInfo.Exists == false)
+            {
+                return RedirectToAction("Index", new { page, filter });
+            }
+            ICollection<FileInfo> validFiles = GetOrderedFiles(directoryInfo, filter).ToList();
 
             if (page > validFiles.Count)
             {
@@ -48,13 +53,25 @@ namespace ContentExplorer.Controllers
             int imagesPerPage = 50;
             ViewBag.ImagesPerPage = imagesPerPage;
 
+            FileTypeService fileTypeService = new FileTypeService();
+
+            ICollection<DirectoryInfo> subDirectories = directoryInfo
+                .EnumerateDirectories()
+                .Where(directory =>
+                    directory.EnumerateFiles("*.*", SearchOption.AllDirectories)
+                        .Any(file =>
+                            fileTypeService.IsFileImage(file.Name) && ImageMatchesFilter(file, filter)
+                        )
+                )
+                .ToList();
+
             DirectoryViewModel imagesViewModel = new DirectoryViewModel
             {
                 FileInfos = validFiles
                     .Skip(imagesPerPage * (page.Value - 1)).Take(imagesPerPage)
                     .ToList(),
                 FileCount = validFiles.Count(),
-                DirectoryInfos = directoryInfo.GetDirectories()
+                DirectoryInfos = subDirectories
             };
 
             ViewBag.Directory = directoryInfo;
@@ -76,7 +93,7 @@ namespace ContentExplorer.Controllers
             string cdn = ConfigurationManager.AppSettings["CDNPath"];
 
             DirectoryInfo directoryInfo = GetCurrentDirectory(directoryPath);
-            FileInfo image = GetMatchingFiles(directoryInfo, filter).ElementAt(page - 1);
+            FileInfo image = GetOrderedFiles(directoryInfo, filter).ElementAt(page - 1);
 
             string imageWebPath = Path.Combine(cdn, baseDirectory, directoryPath, image.Name)
                 .Replace("'", "%27")
@@ -105,7 +122,7 @@ namespace ContentExplorer.Controllers
             }
 
             DirectoryInfo currentDirectory = GetCurrentDirectory(path);
-            ICollection<FileInfo> validFiles = GetMatchingFiles(currentDirectory, filter)
+            ICollection<FileInfo> validFiles = GetOrderedFiles(currentDirectory, filter)
                 .ToList();
 
             if (page > validFiles.Count)
@@ -143,14 +160,17 @@ namespace ContentExplorer.Controllers
             return directoryInfo;
         }
 
-        private IEnumerable<FileInfo> GetMatchingFiles(DirectoryInfo directory, string filter)
+        private IEnumerable<FileInfo> GetOrderedFiles(DirectoryInfo directory, string filter)
         {
             FileTypeService fileTypeService = new FileTypeService();
 
             IEnumerable<FileInfo> validFiles = directory
-                .GetFiles()
-                .Where(file => fileTypeService.IsFileImage(file.Name))
-                .Where(file => ImageMatchesFilter(file, filter))
+                .EnumerateFiles()
+                .Where(file =>
+                    fileTypeService.IsFileImage(file.Name) && ImageMatchesFilter(file, filter)
+                );
+
+            IEnumerable<FileInfo> orderedfiles = validFiles
                 .Select(file => new
                 {
                     File = file,
@@ -164,32 +184,45 @@ namespace ContentExplorer.Controllers
                 })
                 .Select(fileWithNumerics => fileWithNumerics.File);
 
-            return validFiles;
+            return orderedfiles;
         }
 
-        private bool ImageMatchesFilter(FileInfo fileInfo, string filter)
+        private bool ImageMatchesFilter(FileInfo fileInfo, string filterString)
         {
-            if (filter == null)
+            if (string.IsNullOrEmpty(filterString))
             {
                 return true;
             }
 
-            string[] filters = filter.ToLowerInvariant().Split(',');
+            string[] filters = filterString.ToLowerInvariant().Split(',');
             bool isMatch = true;
 
             // Make sure the file matches all of our filters
             for (int filterIndex = 0; filterIndex < filters.Length && isMatch; filterIndex++)
             {
-                if (filter.StartsWith("type: "))
+                string filter = filters[filterIndex];
+
+                if (filter == "")
+                {
+                    isMatch = true;
+                }
+                else if (filter.StartsWith("type:"))
                 {
                     // Remove the special tag from the filter
-                    string filterType = filter.Substring("type: ".Length);
+                    string filterType = filter.Substring("type:".Length).Trim();
 
                     isMatch = fileInfo.Extension.Split('.').Last().Equals(filterType, StringComparison.OrdinalIgnoreCase);
                 }
+                else if (filter.StartsWith("name:"))
+                {
+                    // Remove the special tag from the filter
+                    string filterName = filter.Substring("name:".Length).Trim();
+
+                    isMatch = fileInfo.Name.ToLowerInvariant().Contains(filterName.ToLowerInvariant());
+                }
                 else
                 {
-                    isMatch = fileInfo.Name.ToLowerInvariant().Contains(filter.ToLowerInvariant());
+                    isMatch = Tag.GetByFile(fileInfo.FullName).Any(tag => tag.TagName.Equals(filter, StringComparison.OrdinalIgnoreCase));
                 }
             }
 

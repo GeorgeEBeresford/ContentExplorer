@@ -51,8 +51,6 @@ namespace ContentExplorer.Models
             ICollection<IDictionary<string, object>> dataRows;
             using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
             {
-                dbContext.GetDataRows(query);
-
                 dataRows = dbContext.GetDataRows(query, SqliteWrapper.GenerateParameter("@TagName", tagName));
             }
 
@@ -67,8 +65,8 @@ namespace ContentExplorer.Models
         public static bool InitialiseTable()
         {
             string query = @"CREATE TABLE IF NOT EXISTS Tags (
-                TagId INT,
-                TagName VARCHAR(60)
+                TagId INTEGER PRIMARY KEY,
+                TagName TEXT NOT NULL
             )";
 
             bool isSuccess;
@@ -80,17 +78,43 @@ namespace ContentExplorer.Models
             return isSuccess;
         }
 
-        public static ICollection<Tag> GetByFileName(string fileName)
+        public static ICollection<Tag> GetByDirectory(string directoryPath)
         {
+            // We need to distinguish between files and directories with the same name but the caller shouldn't have to worry about it
+            directoryPath = directoryPath.TrimEnd("/\\".ToCharArray());
+
             string query = @"SELECT Tags.TagId, Tags.TagName
                                 FROM Tags
                                 INNER JOIN TagLinks ON Tags.TagId = TagLinks.TagId
-                                WHERE Tags.FileName = @FileName";
+                                WHERE TagLinks.FilePath LIKE @FilePath
+                                GROUP BY Tags.TagId, Tags.TagName";
 
             ICollection<IDictionary<string, object>> dataRows;
             using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
             {
-                dataRows = dbContext.GetDataRows(query, SqliteWrapper.GenerateParameter("@FileName", fileName));
+                dataRows = dbContext.GetDataRows(query, SqliteWrapper.GenerateParameter("@FilePath", $"{directoryPath}\\%"));
+            }
+
+            ICollection<Tag> tags = dataRows.Select(dataRow =>
+                    new Tag(dataRow)
+                )
+                .ToList();
+
+            return tags;
+        }
+
+        public static ICollection<Tag> GetByFile(string filePath)
+        {
+            string query = @"SELECT Tags.TagId, Tags.TagName
+                                FROM Tags
+                                INNER JOIN TagLinks ON Tags.TagId = TagLinks.TagId
+                                WHERE TagLinks.FilePath = @FilePath
+                                GROUP BY Tags.TagId, Tags.TagName";
+
+            ICollection<IDictionary<string, object>> dataRows;
+            using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
+            {
+                dataRows = dbContext.GetDataRows(query, SqliteWrapper.GenerateParameter("@FilePath", filePath));
             }
 
             ICollection<Tag> tags = dataRows.Select(dataRow =>
@@ -103,7 +127,7 @@ namespace ContentExplorer.Models
 
         public bool Create()
         {
-            const string query = @"INSERT INTO Tags (TagId, TagName) VALUES (@TagId, @TagName); SELECT last_insert_rowid()";
+            const string query = @"INSERT INTO Tags (TagName) VALUES (@TagName); SELECT last_insert_rowid()";
 
             using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
             {

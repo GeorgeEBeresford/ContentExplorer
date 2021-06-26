@@ -15,23 +15,23 @@ namespace ContentExplorer.Models
         {
             TagLinkId = Convert.ToInt32(rowValues["TagLinkId"]);
             TagId = Convert.ToInt32(rowValues["TagId"]);
-            FileName = Convert.ToString(rowValues["FileName"]);
+            FilePath = Convert.ToString(rowValues["FilePath"]);
         }
 
         public int TagLinkId { get; set; }
         public int TagId { get; set; }
-        public string FileName { get; set; }
+        public string FilePath { get; set; }
 
-        public static ICollection<TagLink> GetByFileName(string fileName)
+        public static ICollection<TagLink> GetByFile(string filePath)
         {
-            string query = @"SELECT FileName, TagId, TagLinkId
+            string query = @"SELECT FilePath, TagId, TagLinkId
                                 FROM TagLinks
-                                WHERE FileName = @FileName";
+                                WHERE FilePath = @FilePath";
 
             ICollection<IDictionary<string, object>> dataRows;
             using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
             {
-                dataRows = dbContext.GetDataRows(query, SqliteWrapper.GenerateParameter("@FileName", fileName));
+                dataRows = dbContext.GetDataRows(query, SqliteWrapper.GenerateParameter("@FilePath", filePath));
             }
 
             ICollection<TagLink> tagLinks = dataRows.Select(dataRow =>
@@ -46,9 +46,10 @@ namespace ContentExplorer.Models
         public static bool InitialiseTable()
         {
             string query = @"CREATE TABLE IF NOT EXISTS TagLinks (
-                TagLinkId INT,
+                TagLinkId INTEGER PRIMARY KEY,
                 TagId INT,
-                FileName VARCHAR(257)
+                FilePath TEXT NOT NULL,
+                FOREIGN KEY(TagId) REFERENCES Tags(TagId)
             )";
 
             bool isSuccess;
@@ -62,7 +63,7 @@ namespace ContentExplorer.Models
 
         public static ICollection<TagLink> GetByTagName(string tagName)
         {
-            string query = @"SELECT FileName, TagId, TagLinkId
+            string query = @"SELECT TagLinks.FilePath, TagLinks.TagId, TagLinks.TagLinkId
                                 FROM TagLinks
                                 INNER JOIN Tags ON TagLinks.TagId = Tags.TagId
                                 WHERE Tags.TagName = @TagName";
@@ -84,7 +85,10 @@ namespace ContentExplorer.Models
 
         public bool Create()
         {
-            const string query = @"INSERT INTO TagLinks (TagLinkId, TagId, FileName) VALUES (@TagLinkId, @TagId, @FileName); SELECT last_insert_rowid()";
+            // We may need to search for paths later and we don't want to be dealing with differences in slashes
+            FilePath.Replace("/", "\\");
+
+            const string query = @"INSERT INTO TagLinks (TagId, FilePath) VALUES (@TagId, @FilePath); SELECT last_insert_rowid()";
 
             using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
             {
@@ -115,7 +119,7 @@ namespace ContentExplorer.Models
             {
                 SqliteWrapper.GenerateParameter("@TagLinkId", TagLinkId),
                 SqliteWrapper.GenerateParameter("@TagId", TagId),
-                SqliteWrapper.GenerateParameter("@FileName", FileName)
+                SqliteWrapper.GenerateParameter("@FilePath", FilePath)
             };
         }
     }
