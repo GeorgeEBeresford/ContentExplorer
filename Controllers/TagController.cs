@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Web.Mvc;
@@ -10,27 +11,35 @@ namespace ContentExplorer.Controllers
     public class TagController : Controller
     {
         [HttpPost]
-        public JsonResult AddTagsToFiles(string[] filePaths, string[] tags)
+        public JsonResult AddTagsToFiles(string[] filePaths, string[] tags, string mediaType)
         {
             // Filter inputs that would make no sense
             filePaths = filePaths.Where(filePath => filePath != "").ToArray();
             tags = tags.Where(tag => tag != "").Select(tag => tag.Trim()).ToArray();
 
+            string rootDirectory = GetRootDirectory(mediaType);
+            IEnumerable<string> diskLocations = filePaths
+                .Select(filePath => Path.Combine(rootDirectory, filePath))
+                .ToArray();
+
             bool isSuccess = true;
-            foreach(string filePath in filePaths)
+            foreach (string diskLocation in diskLocations)
             {
-                isSuccess &= AddTags(filePath, tags);
+                isSuccess &= AddTags(diskLocation, tags);
             }
 
             return Json(isSuccess);
         }
 
         [HttpPost]
-        public JsonResult AddTagsToDirectories(string[] directoryPaths, string[] tags)
+        public JsonResult AddTagsToDirectories(string[] directoryPaths, string[] tags, string mediaType)
         {
             // Filter inputs that would make no sense
             directoryPaths = directoryPaths.Where(filePath => filePath != "").ToArray();
             tags = tags.Where(tag => tag != "").Select(tag => tag.Trim()).ToArray();
+
+            string rootDirectory = GetRootDirectory(mediaType);
+            directoryPaths = directoryPaths.Select(directoryPath => rootDirectory + "\\" + directoryPath).ToArray();
 
             bool isSuccess = true;
             foreach (string directoryPath in directoryPaths)
@@ -39,7 +48,7 @@ namespace ContentExplorer.Controllers
                 if (directory.Exists)
                 {
                     FileInfo[] subFiles = directory.GetFiles("*.*", SearchOption.AllDirectories);
-                    foreach(FileInfo subFile in subFiles)
+                    foreach (FileInfo subFile in subFiles)
                     {
                         isSuccess &= AddTags(subFile.FullName, tags);
                     }
@@ -65,15 +74,33 @@ namespace ContentExplorer.Controllers
 
             return Json(isSuccess);
         }
-        
+
         [HttpGet]
-        public JsonResult GetDirectoryTags(string directoryName)
+        public JsonResult GetDirectoryTags(string directoryName, string mediaType)
         {
+            directoryName = GetRootDirectory(mediaType) + "\\" + directoryName;
+
             ICollection<Tag> tags = Tag.GetByDirectory(directoryName)
                 .OrderBy(tag => tag.TagName)
                 .ToArray();
 
             return Json(tags, JsonRequestBehavior.AllowGet);
+        }
+
+        private string GetRootDirectory(string mediaType)
+        {
+            if (mediaType.Equals("video", StringComparison.OrdinalIgnoreCase))
+            {
+                return ConfigurationManager.AppSettings["VideosPath"];
+            }
+            else if (mediaType.Equals("image", StringComparison.OrdinalIgnoreCase))
+            {
+                return ConfigurationManager.AppSettings["ImagesPath"];
+            }
+            else
+            {
+                throw new InvalidOperationException("Media type is unsupported.");
+            }
         }
 
         public JsonResult DeleteAllTags()
@@ -83,7 +110,7 @@ namespace ContentExplorer.Controllers
             foreach (Tag tag in tags)
             {
                 IEnumerable<TagLink> tagLinks = TagLink.GetByTagName(tag.TagName);
-                foreach(TagLink tagLink in tagLinks)
+                foreach (TagLink tagLink in tagLinks)
                 {
                     tagLink.Delete();
                 }
@@ -96,7 +123,8 @@ namespace ContentExplorer.Controllers
 
         private bool AddTags(string filePath, IEnumerable<string> tagNames)
         {
-            FileInfo fileInfo = new FileInfo(filePath);
+            string webDiskLocation = ConfigurationManager.AppSettings["BaseDirectory"];
+            FileInfo fileInfo = new FileInfo(Path.Combine(webDiskLocation, filePath));
 
             if (fileInfo.Exists == false)
             {

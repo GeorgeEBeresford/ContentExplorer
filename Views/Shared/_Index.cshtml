@@ -1,0 +1,113 @@
+﻿@{
+    string cdn = ConfigurationManager.AppSettings["CDNPath"];
+    DirectoryInfo currentDirectory = ViewBag.Directory;
+    string baseSiteDirectory = ConfigurationManager.AppSettings["BaseDirectory"];
+    string path = currentDirectory.FullName.Substring(baseSiteDirectory.Length + ViewBag.BaseDirectory.Length + 1).Trim("\\/.".ToCharArray());
+    int filesPerPage = ViewBag.FilesPerPage;
+    Layout = "./_Layout.cshtml";
+}
+
+@using System.Configuration
+@using ContentExplorer.Services
+@model ContentExplorer.Models.ViewModels.DirectoryViewModel
+
+<li class="directory_item" data-template="directory" style="display: none; background-size: cover; background-position: center center">
+    <a href="" class="directory_link"></a>
+    <label class="media_name">
+        <span data-directory-name></span>
+        <input type="checkbox" data-tag-selector data-tag-type="directory" />
+    </label>
+</li>
+
+<li class="media_item" data-template="file" style="display: none; background-size: cover">
+    <a href="" class="media_link"></a>
+    <label class="media_name">
+        <span data-file-name></span>
+        <input type="checkbox" data-tag-selector data-tag-type="file" />
+    </label>
+</li>
+
+<input type="hidden" value="@ViewBag.Filter" name="Filter" />
+<input type="hidden" value="@ViewBag.Page" name="Page" />
+<input type="hidden" value="@ViewBag.FilesPerPage" name="FilesPerPage" />
+<input type="hidden" value="@ConfigurationManager.AppSettings["CDNPath"]" name="CdnPath" />
+<input type="hidden" value="@(path)" name="Path" />
+
+<nav data-stepping-stones class="steppingstone_list"></nav>
+
+<div class="sidebar">
+
+    <h2>Filters</h2>
+
+    @if (ViewBag.Filter == "type: gif")
+    {
+        <a href="@Url.Action("Index", new {path = currentDirectory, page = ViewBag.Page})">
+            <label>Animated Gifs: True</label>
+        </a>
+    }
+    else
+    {
+        <a href="@Url.Action("Index", new {path = currentDirectory, page = ViewBag.Page, filter = "type: gif"})">
+            <label>Animated Gifs: False</label>
+        </a>
+    }
+
+    <label for="txtFilter">
+        Custom filter
+        <input type="text" id="txtFilter" value="@ViewBag.Filter" class="input-sm" data-custom-filter />
+        <button style="@(ViewBag.Filter != "" ? "display: inline-block" : "display: none")" data-clear-filter>X</button>
+    </label>
+    <button class="btn btn-default" data-apply-filter>Apply Custom Filter</button>
+
+    <ul class="tagList" data-tags-for-folder>
+    </ul>
+
+    @if (Model.FileInfos.Any() || Model.DirectoryInfos.Any())
+    {
+        <h2>Add Tags</h2>
+        <label class="input-group">
+            Tag Name
+            <input class="input-sm" type="text" data-tag-name />
+            <button class="btn btn-default" data-add-tag>Add Tags</button>
+        </label>
+    }
+</div>
+<div class="content_sidebar panel">
+
+    <div class="btn-block" data-media-selection></div>
+
+    <section data-directories>
+        <h1>Directories</h1>
+        <ul class="directory_list" data-directory-list></ul>
+    </section>
+
+    <section style="display: none" data-files>
+        <h1>Files</h1>
+        <ul class="media_list" data-file-list></ul>
+    </section>
+
+    <div class="btn-block" data-media-selection></div>
+
+    @{
+        int maxPages = Convert.ToInt32(Math.Ceiling((decimal)Model.FileCount / filesPerPage));
+    }
+
+    @if (maxPages > 1)
+    {
+        <div style="display: none" class="button_wrapper" data-pages>
+            <div class="button_list" data-page-list></div>
+            <div data-total-pages></div>
+        </div>
+    }
+
+    <input type="hidden" name="FilesPerPage" value="@filesPerPage" />
+    <input type="hidden" name="FileCount" value="@Model.FileCount" />
+    <input type="hidden" name="MaxPages" value="@maxPages" />
+</div>
+
+@RenderBody()
+
+@section scripts {
+
+    @RenderSection("scripts", required: false)
+}

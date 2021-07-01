@@ -7235,11 +7235,12 @@ fieldset[disabled] .btn-danger.active {
 
 .media_item {
   display: inline-block;
-  width: 200px;
-  height: 200px;
+  width: 300px;
+  height: 300px;
   position: relative;
   border-radius: 4px;
-  overflow: hidden; }
+  overflow: hidden;
+  margin-right: 5px; }
   .media_item-expanded, .media_item:hover .media_name {
     max-height: 100%; }
 

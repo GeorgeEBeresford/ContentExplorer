@@ -24,9 +24,12 @@ namespace ContentExplorer.Models
 
         public static ICollection<TagLink> GetByFile(string filePath)
         {
+            // The caller shouldn't have to care about which slash or case to use
+            filePath = filePath.Replace("/", "\\").ToLowerInvariant();
+
             string query = @"SELECT FilePath, TagId, TagLinkId
                                 FROM TagLinks
-                                WHERE FilePath = @FilePath";
+                                WHERE LOWER(REPLACE(TagLinks.FilePath, '/', '\')) = @FilePath";
 
             ICollection<IDictionary<string, object>> dataRows;
             using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))

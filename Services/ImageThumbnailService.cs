@@ -1,14 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Xml.Schema;
-using NReco.VideoConverter;
 
 namespace ContentExplorer.Services
 {
-    public class ImageThumbnailService
+    public class ImageThumbnailService : IThumbnailService
     {
-        public FileInfo GetImageThumbnail(DirectoryInfo directory)
+        public FileInfo GetDirectoryThumbnail(DirectoryInfo directory)
         {
             FileTypeService fileTypeService = new FileTypeService();
 
@@ -30,7 +28,7 @@ namespace ContentExplorer.Services
                 for (int subDirectoryIndex = 0; subDirectoryIndex < subDirectories.Count; subDirectoryIndex++)
                 {
                     DirectoryInfo subDirectory = subDirectories.ElementAt(subDirectoryIndex);
-                    subVideoThumbnail = GetImageThumbnail(subDirectory);
+                    subVideoThumbnail = GetDirectoryThumbnail(subDirectory);
                 }
 
                 return subVideoThumbnail;

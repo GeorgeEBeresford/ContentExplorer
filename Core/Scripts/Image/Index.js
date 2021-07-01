@@ -1,5 +1,5 @@
 $(function () {
 
-    var fileIndex = new FileIndex();
+    var fileIndex = new FileIndex("image", "Image");
     fileIndex.initialiseAsync();
 })

@@ -8,7 +8,6 @@ using System.Web.Mvc;
 using ContentExplorer.Models;
 using ContentExplorer.Models.ViewModels;
 using ContentExplorer.Services;
-using Microsoft.Ajax.Utilities;
 
 namespace ContentExplorer.Controllers
 {
@@ -45,13 +44,8 @@ namespace ContentExplorer.Controllers
             }
             ICollection<FileInfo> validFiles = GetOrderedFiles(directoryInfo, filter).ToList();
 
-            if (page > validFiles.Count)
-            {
-                page = validFiles.Count;
-            }
-
             int imagesPerPage = 50;
-            ViewBag.ImagesPerPage = imagesPerPage;
+            ViewBag.FilesPerPage = imagesPerPage;
 
             FileTypeService fileTypeService = new FileTypeService();
 
@@ -194,6 +188,9 @@ namespace ContentExplorer.Controllers
                 return true;
             }
 
+            string websiteDiskLocation = ConfigurationManager.AppSettings["BaseDirectory"];
+            string filePath = fileInfo.FullName.Substring(websiteDiskLocation.Length + 1);
+
             string[] filters = filterString.ToLowerInvariant().Split(',');
             bool isMatch = true;
 
@@ -222,7 +219,7 @@ namespace ContentExplorer.Controllers
                 }
                 else
                 {
-                    isMatch = Tag.GetByFile(fileInfo.FullName).Any(tag => tag.TagName.Equals(filter, StringComparison.OrdinalIgnoreCase));
+                    isMatch = Tag.GetByFile(filePath).Any(tag => tag.TagName.Equals(filter, StringComparison.OrdinalIgnoreCase));
                 }
             }
 

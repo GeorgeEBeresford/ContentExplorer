@@ -45,13 +45,8 @@ namespace ContentExplorer.Controllers
 
             ICollection<FileInfo> validFiles = GetMatchingFiles(directoryInfo, filter).ToList();
 
-            if (page > validFiles.Count)
-            {
-                page = validFiles.Count;
-            }
-
             int videosPerPage = 50;
-            ViewBag.VideosPerPage = videosPerPage;
+            ViewBag.FilesPerPage = videosPerPage;
 
             DirectoryViewModel videosViewModel = new DirectoryViewModel
             {
@@ -99,7 +94,6 @@ namespace ContentExplorer.Controllers
             ViewBag.Path = path;
             ViewBag.Id = page;
             ViewBag.Filter = filter;
-
 
             int maxPreviews = validFiles.Count > 15 ? 15 : validFiles.Count;
             // Zero-based index
@@ -220,6 +214,9 @@ namespace ContentExplorer.Controllers
                 return true;
             }
 
+            string websiteDiskLocation = ConfigurationManager.AppSettings["BaseDirectory"];
+            string filePath = fileInfo.FullName.Substring(websiteDiskLocation.Length + 1);
+
             string[] filters = filterString.ToLowerInvariant().Split(',');
             bool isMatch = true;
 
@@ -248,7 +245,7 @@ namespace ContentExplorer.Controllers
                 }
                 else
                 {
-                    isMatch = Tag.GetByFile(fileInfo.FullName).Any(tag => tag.TagName.Equals(filter, StringComparison.OrdinalIgnoreCase));
+                    isMatch = Tag.GetByFile(filePath).Any(tag => tag.TagName.Equals(filter, StringComparison.OrdinalIgnoreCase));
                 }
             }
 

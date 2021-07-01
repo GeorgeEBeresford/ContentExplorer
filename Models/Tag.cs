@@ -80,13 +80,16 @@ namespace ContentExplorer.Models
 
         public static ICollection<Tag> GetByDirectory(string directoryPath)
         {
+            // The caller shouldn't have to care about which slash or case to use
+            directoryPath = directoryPath.Replace("/", "\\").ToLowerInvariant();
+
             // We need to distinguish between files and directories with the same name but the caller shouldn't have to worry about it
-            directoryPath = directoryPath.TrimEnd("/\\".ToCharArray());
+            directoryPath = directoryPath.TrimEnd("\\".ToCharArray());
 
             string query = @"SELECT Tags.TagId, Tags.TagName
                                 FROM Tags
                                 INNER JOIN TagLinks ON Tags.TagId = TagLinks.TagId
-                                WHERE TagLinks.FilePath LIKE @FilePath
+                                WHERE LOWER(REPLACE(TagLinks.FilePath, '/', '\')) LIKE @FilePath
                                 GROUP BY Tags.TagId, Tags.TagName";
 
             ICollection<IDictionary<string, object>> dataRows;
@@ -105,10 +108,16 @@ namespace ContentExplorer.Models
 
         public static ICollection<Tag> GetByFile(string filePath)
         {
+            // The caller shouldn't have to care about which slash to use
+            filePath = filePath.Replace("/", "\\");
+
+            // We need to distinguish between files and directories with the same name but the caller shouldn't have to worry about it
+            filePath = filePath.ToLowerInvariant().TrimEnd("/\\".ToCharArray());
+
             string query = @"SELECT Tags.TagId, Tags.TagName
                                 FROM Tags
                                 INNER JOIN TagLinks ON Tags.TagId = TagLinks.TagId
-                                WHERE TagLinks.FilePath = @FilePath
+                                WHERE LOWER(REPLACE(TagLinks.FilePath, '/', '\')) = @FilePath
                                 GROUP BY Tags.TagId, Tags.TagName";
 
             ICollection<IDictionary<string, object>> dataRows;
