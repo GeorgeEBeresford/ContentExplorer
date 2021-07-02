@@ -48,37 +48,10 @@ function FileIndex(mediaType, controller) {
     this.controller = controller;
 
     this.totalFiles = 0;
-}
 
-FileIndex.prototype.getSubFilesAsync = function () {
+    this.mediaRepository = new MediaRepository();
 
-    var deferred = $.Deferred();
-    var payload = {
-        currentDirectory: this.directoryPath,
-        mediaType: this.mediaType,
-        page: this.page,
-        filter: this.filter
-    };
-
-    $.ajax({
-        url: "../Media/GetSubFiles",
-        method: "GET",
-        data: payload,
-        dataType: "json",
-        contentType: "application/json",
-        success: function (paginatedSubFiles) {
-
-
-            deferred.resolve(paginatedSubFiles);
-        },
-        error: function (xhr) {
-
-            alert("[" + xhr.status + "] " + xhr.statusText);
-            deferred.reject();
-        }
-    });
-
-    return deferred.promise();
+    this.tagRepository = new TagRepository();
 }
 
 FileIndex.prototype.renderPages = function () {
@@ -118,40 +91,12 @@ FileIndex.prototype.renderPages = function () {
     }
 }
 
-FileIndex.prototype.getSubDirectoriesAsync = function () {
-
-    var deferred = $.Deferred();
-    var payload = {
-        currentDirectory: this.directoryPath,
-        mediaType: this.mediaType
-    };
-
-    $.ajax({
-        url: "../Media/GetSubDirectories",
-        method: "GET",
-        data: payload,
-        dataType: "json",
-        contentType: "application/json",
-        success: function (directoryHierarchy) {
-
-            deferred.resolve(directoryHierarchy);
-        },
-        error: function (xhr) {
-
-            alert("[" + xhr.status + "] " + xhr.statusText);
-            deferred.reject();
-        }
-    });
-
-    return deferred.promise();
-}
-
 FileIndex.prototype.renderSubFilesAsync = function () {
 
     var deferred = $.Deferred();
     var self = this;
 
-    this.getSubFilesAsync()
+    this.mediaRepository.getSubFilesAsync(this.directoryPath, this.mediaType, this.page, this.filter)
         .then(function (paginatedSubFiles) {
 
             self.totalFiles = paginatedSubFiles.Total;
@@ -217,7 +162,7 @@ FileIndex.prototype.renderSubDirectoriesAsync = function () {
     var deferred = $.Deferred();
     var self = this;
 
-    this.getSubDirectoriesAsync()
+    this.mediaRepository.getSubDirectoriesAsync(this.directoryPath, this.mediaType, this.filter)
         .then(function (subDirectoryInfos) {
 
             subDirectoryInfos.forEach(function (subDirectoryInfo) {
@@ -244,7 +189,7 @@ FileIndex.prototype.renderSubDirectory = function (subDirectoryInfo) {
         .show()
         .removeAttr("data-template");
 
-    $directoryPreview.find("a").attr("href", window.location.origin + "/" + window.location.pathname + "?path=" + subDirectoryInfo.Path);
+    $directoryPreview.find("a").attr("href", window.location.origin + window.location.pathname + "?path=" + subDirectoryInfo.Path + "&filter=" + this.filter);
     $directoryPreview.find("[data-directory-name]").text(subDirectoryInfo.TaggingUrl);
     $directoryPreview.find("[data-tag-selector]").attr("data-path", subDirectoryInfo.Path);
     $directoryPreview.css("background-image", "url(\"" + this.cdnPath + "/" + subDirectoryInfo.ThumbnailUrl + "\")");
@@ -252,50 +197,17 @@ FileIndex.prototype.renderSubDirectory = function (subDirectoryInfo) {
     this.$directoryList.append($directoryPreview);
 }
 
-/**
- * Gets the hierarchy for the current directory from the API
- * @returns {JQuery.Promise<any>}
- */
-FileIndex.prototype.getDirectoryHierarchyAsync = function () {
-
-    var deferred = $.Deferred();
-    var payload = {
-        currentDirectory: this.directoryPath,
-        mediaType: this.mediaType
-    };
-
-    $.ajax({
-        url: "../Media/GetDirectoryHierarchy",
-        method: "GET",
-        data: payload,
-        dataType: "json",
-        contentType: "application/json",
-        success: function (directoryHierarchy) {
-
-            deferred.resolve(directoryHierarchy);
-            console.log(directoryHierarchy);
-        },
-        error: function (xhr) {
-
-            alert("[" + xhr.status + "] " + xhr.statusText);
-            deferred.reject();
-        }
-    });
-
-    return deferred.promise();
-}
-
 FileIndex.prototype.renderSteppingStonesAsync = function () {
 
     var self = this;
     var deferred = $.Deferred();
 
-    this.getDirectoryHierarchyAsync()
+    this.mediaRepository.getDirectoryHierarchyAsync(this.directoryPath, this.mediaType)
         .then(function (directoryHierarchy) {
 
             while (directoryHierarchy !== null) {
 
-                var $steppingStone = FileIndex.generateSteppingStone(directoryHierarchy.Name, directoryHierarchy.Path);
+                var $steppingStone = self.generateSteppingStone(directoryHierarchy.Name, directoryHierarchy.Path);
                 self.$steppingStones.prepend($steppingStone);
 
                 directoryHierarchy = directoryHierarchy.Parent;
@@ -311,11 +223,11 @@ FileIndex.prototype.renderSteppingStonesAsync = function () {
     return deferred.promise();
 }
 
-FileIndex.generateSteppingStone = function (text, path) {
+FileIndex.prototype.generateSteppingStone = function (text, path) {
 
     var $steppingstone = $("<a>")
         .text(text)
-        .attr("href", window.location.origin + window.location.pathname + "?path=" + path)
+        .attr("href", window.location.origin + window.location.pathname + "?path=" + path + "&filter=" + this.filter)
         .addClass("steppingstone_item");
 
     return $steppingstone;
@@ -352,7 +264,7 @@ FileIndex.prototype.initialiseAsync = function () {
                 $files.html($noFilesMessage);
             }
 
-            self.addTagging();
+            self.addMediaDependentActions();
 
             deferred.resolve();
         })
@@ -420,7 +332,10 @@ FileIndex.prototype.addEventHandlers = function () {
     });
 }
 
-FileIndex.prototype.addTagging = function () {
+/**
+ * Adds any actions to the page which require the files and directories to already be loaded
+ */
+FileIndex.prototype.addMediaDependentActions = function () {
 
     var self = this;
     var numberOfFiles = $("[data-files]").find("li").length;
@@ -498,45 +413,24 @@ FileIndex.prototype.addTagsToDirectoriesAsync = function () {
         directoryPaths.push(filePath);
     });
 
-
     var deferred = $.Deferred();
-    var payload = {
-        directoryPaths: directoryPaths,
-        tags: tagNames.split(","),
-        mediaType: this.mediaType
-    };
+    var tags = tagNames.split(",");
+    this.tagRepository.addTagsToDirectories(directoryPaths, tags, this.mediaType)
+        .then(function () {
 
-    $.ajax({
-        url: "../Tag/AddTagsToDirectories",
-        method: "POST",
-        data: JSON.stringify(payload),
-        dataType: "json",
-        contentType: "application/json",
-        success: function (isSuccess) {
+            tags.forEach(function (tagName) {
 
-            if (isSuccess) {
+                self.addTagToList(tagName);
+            });
 
-                payload.tags.forEach(function (tagName) {
+            self.$tagName.val("");
 
-                    self.addTagToList(tagName);
-                });
+            deferred.resolve();
+        })
+        .fail(function () {
 
-                self.$tagName.val("");
-
-                deferred.resolve();
-            }
-            else {
-
-                alert("Failed to add tags to directories");
-                deferred.reject();
-            }
-        },
-        error: function (xhr) {
-
-            alert("[" + xhr.status + "] " + xhr.statusText);
             deferred.reject();
-        }
-    });
+        });
 
     return deferred.promise();
 }
@@ -562,70 +456,22 @@ FileIndex.prototype.addTagsToFilesAsync = function () {
         filePaths.push(filePath);
     });
 
-
     var deferred = $.Deferred();
-    var payload = {
-        filePaths: filePaths,
-        tags: tagNames.split(","),
-        mediaType: this.mediaType
-    };
+    var tags = tagNames.split(",");
+    this.tagRepository.addTagsToFiles(filePaths, tags, this.mediaType)
+        .then(function () {
 
-    $.ajax({
-        url: "../Tag/AddTagsToFiles",
-        method: "POST",
-        data: JSON.stringify(payload),
-        dataType: "json",
-        contentType: "application/json",
-        success: function (isSuccess) {
+            tags.forEach(function (tagName) {
 
-            if (isSuccess) {
+                self.addTagToList(tagName);
+            });
 
-                payload.tags.forEach(function (tagName) {
+            deferred.resolve();
+        })
+        .fail(function () {
 
-                    self.addTagToList(tagName);
-                });
-
-                deferred.resolve();
-            }
-            else {
-
-                alert("Failed to add tags to directories");
-                deferred.reject();
-            }
-        },
-        error: function (xhr) {
-
-            alert("[" + xhr.status + "] " + xhr.statusText);
             deferred.reject();
-        }
-    });
-
-    return deferred.promise();
-}
-
-FileIndex.prototype.getTagsAsync = function () {
-
-    var deferred = $.Deferred();
-
-    $.ajax({
-        url: "../Tag/GetDirectoryTags",
-        method: "GET",
-        data: {
-            directoryName: this.directoryPath,
-            mediaType: this.mediaType
-        },
-        dataType: "json",
-        contentType: "application/json",
-        success: function (tags) {
-
-            deferred.resolve(tags);
-        },
-        error: function (xhr) {
-
-            alert("[" + xhr.status + "] " + xhr.statusText);
-            deferred.reject();
-        }
-    });
+        });
 
     return deferred.promise();
 }
@@ -635,7 +481,7 @@ FileIndex.prototype.renderTagListAsync = function () {
     var deferred = $.Deferred();
     var self = this;
 
-    this.getTagsAsync()
+    this.tagRepository.getTagsAsync(this.directoryPath, this.mediaType)
         .then(function (tag) {
 
             tag.forEach(function (tag) {

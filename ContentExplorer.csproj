@@ -178,6 +178,9 @@
   <ItemGroup>
     <Content Include="Core\Images\ajax-loader.gif" />
     <Content Include="Core\Scripts\Common\FileIndex.js" />
+    <Content Include="Core\Scripts\Common\HttpRequester.js" />
+    <Content Include="Core\Scripts\Common\MediaRepository.js" />
+    <Content Include="Core\Scripts\Common\TagRepository.js" />
     <Content Include="Core\Styles\Modules\_BootstrapTheme.scss" />
     <None Include="Core\Styles\Modules\_Bootstrap.scss" />
     <Content Include="Core\Styles\Site.css">

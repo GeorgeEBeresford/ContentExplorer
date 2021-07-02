@@ -74,6 +74,8 @@
 </div>
 <div class="content_sidebar panel">
 
+    @RenderSection("BeforeContent", false)
+
     <div class="btn-block" data-media-selection></div>
 
     <section data-directories>
@@ -88,21 +90,12 @@
 
     <div class="btn-block" data-media-selection></div>
 
-    @{
-        int maxPages = Convert.ToInt32(Math.Ceiling((decimal)Model.FileCount / filesPerPage));
-    }
-
-    @if (maxPages > 1)
-    {
-        <div style="display: none" class="button_wrapper" data-pages>
-            <div class="button_list" data-page-list></div>
-            <div data-total-pages></div>
-        </div>
-    }
+    <div style="display: none" class="button_wrapper" data-pages>
+        <div class="button_list" data-page-list></div>
+        <div data-total-pages></div>
+    </div>
 
     <input type="hidden" name="FilesPerPage" value="@filesPerPage" />
-    <input type="hidden" name="FileCount" value="@Model.FileCount" />
-    <input type="hidden" name="MaxPages" value="@maxPages" />
 </div>
 
 @RenderBody()

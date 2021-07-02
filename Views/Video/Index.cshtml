@@ -9,7 +9,11 @@
 @using System.Configuration
 @using ContentExplorer.Services
 
+@section BeforeContent {
+    <div class="btn-block" data-actions="video"></div>
+}
+
 @section scripts {
 
-    @Scripts.Render("~/bundles/video/index")
+    @Scripts.Render("~/bundles/scripts/video/index")
 }

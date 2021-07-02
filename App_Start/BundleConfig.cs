@@ -1,5 +1,4 @@
-﻿using System.Web;
-using System.Web.Optimization;
+﻿using System.Web.Optimization;
 
 namespace ContentExplorer
 {
@@ -20,31 +19,26 @@ namespace ContentExplorer
 
         private static void RegisterScripts(BundleCollection bundles)
         {
-            bundles.Add(new ScriptBundle("~/bundles/jquery").Include(
-                "~/Core/Scripts/Common/jquery-{version}.js"));
+            bundles.Add(new ScriptBundle("~/bundles/scripts/common").Include(
+                "~/Core/Scripts/Common/jquery-{version}.js",
+                "~/Core/Scripts/Common/modernizr-*",
+                "~/Core/Scripts/Common/bootstrap.js",
+                "~/Core/Scripts/Common/HttpRequester.js",
+                "~/Core/Scripts/Common/MediaRepository.js",
+                "~/Core/Scripts/Common/TagRepository.js",
+                "~/Core/Scripts/Common/FileIndex.js"
+            ));
 
-            // Use the development version of Modernizr to develop with and learn from. Then, when you're
-            // ready for production, use the build tool at https://modernizr.com to pick only the tests you need.
-            bundles.Add(new ScriptBundle("~/bundles/modernizr").Include(
-                "~/Core/Scripts/Common/modernizr-*"));
-
-            bundles.Add(new ScriptBundle("~/bundles/bootstrap").Include(
-                "~/Core/Scripts/Common/bootstrap.js"));
-
-            bundles.Add(new ScriptBundle("~/bundles/image/view").Include(
-                "~/Core/Scripts/Common/FileIndex.js",
+            bundles.Add(new ScriptBundle("~/bundles/scripts/image/view").Include(
                 "~/Core/Scripts/Image/View.js"));
 
-            bundles.Add(new ScriptBundle("~/bundles/image/index").Include(
-                "~/Core/Scripts/Common/FileIndex.js",
+            bundles.Add(new ScriptBundle("~/bundles/scripts/image/index").Include(
                 "~/Core/Scripts/Image/Index.js"));
 
-            bundles.Add(new ScriptBundle("~/bundles/video/view").Include(
-                "~/Core/Scripts/Common/FileIndex.js",
+            bundles.Add(new ScriptBundle("~/bundles/scripts/video/view").Include(
                 "~/Core/Scripts/Video/View.js"));
 
-            bundles.Add(new ScriptBundle("~/bundles/video/index").Include(
-                "~/Core/Scripts/Common/FileIndex.js",
+            bundles.Add(new ScriptBundle("~/bundles/scripts/video/index").Include(
                 "~/Core/Scripts/Video/Index.js"));
         }
     }

@@ -36,7 +36,7 @@ namespace ContentExplorer.Controllers
         }
 
         [HttpGet]
-        public JsonResult GetSubDirectories(string currentDirectory, string mediaType)
+        public JsonResult GetSubDirectories(string currentDirectory, string mediaType, string filter)
         {
             string hierarchyRoot = GetHierarchyRoot(mediaType);
             string websiteDiskLocation = ConfigurationManager.AppSettings["BaseDirectory"];
@@ -54,7 +54,8 @@ namespace ContentExplorer.Controllers
             DirectoryInfo[] subDirectoryInfos = currentDirectoryInfo.GetDirectories();
             ICollection<MediaPreviewViewModel> directoryPreviews = subDirectoryInfos
                 .Where(subDirectoryInfo =>
-                    subDirectoryInfo.EnumerateFiles("*.*", SearchOption.AllDirectories).Any()
+                    subDirectoryInfo.EnumerateFiles("*.*", SearchOption.AllDirectories)
+                    .Any(subFile => FileMatchesFilter(subFile, filter, mediaType))
                 )
                 .Select(subDirectoryInfo => new MediaPreviewViewModel
                 {
