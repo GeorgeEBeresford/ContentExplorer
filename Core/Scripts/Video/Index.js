@@ -55,7 +55,24 @@ VideoIndex.prototype.addMediaDependentActions = function () {
             $("<div>").addClass("btn btn-default").text("Rebuild Thumbnails")
         );
 
-    this.$actions.append($rebuildThumbnailsButton);
+    var $reformatNames = $("<a>")
+        .attr("href", "../" + this.controller + "/" + "ReformatNames?path=" + this.directoryPath)
+        .attr("target", "_blank")
+        .append(
+            $("<div>").addClass("btn btn-default").text("Reformat Names")
+        );
+
+    var $convertUnplayableVideos = $("<a>")
+        .attr("href", "../" + this.controller + "/" + "ConvertUnplayableVideos?path=" + this.directoryPath)
+        .attr("target", "_blank")
+        .append(
+            $("<div>").addClass("btn btn-default").text("Convert Unplayable Videos")
+        );
+
+    this.$actions
+        .append($rebuildThumbnailsButton)
+        .append($reformatNames)
+        .append($convertUnplayableVideos);
 }
 
 $(function () {
