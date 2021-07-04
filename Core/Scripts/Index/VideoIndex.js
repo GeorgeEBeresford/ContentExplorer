@@ -50,7 +50,7 @@ VideoIndex.prototype.renderSubFile = function (subFileInfo, subFileIndex) {
 
 VideoIndex.prototype.addMediaDependentActions = function () {
 
-    FileIndex.prototype.addMediaDependentActions.call(this);
+    MediaIndex.prototype.addMediaDependentActions.call(this);
 
     var $rebuildThumbnailsButton = $("<a>")
         .attr("href", "../" + this.controller + "/" + "RebuildThumbnails?path=" + this.directoryPath)
@@ -81,6 +81,6 @@ VideoIndex.prototype.addMediaDependentActions = function () {
 
 $(function () {
 
-    var fileIndex = new VideoIndex();
-    fileIndex.initialiseAsync();
+    var mediaIndex = new VideoIndex();
+    mediaIndex.initialiseAsync();
 })
