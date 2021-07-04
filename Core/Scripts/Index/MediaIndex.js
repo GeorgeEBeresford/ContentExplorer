@@ -5,7 +5,7 @@
  * @param {string} controller
  * @class
  */
-function FileIndex(mediaType, controller) {
+function MediaIndex(mediaType, controller) {
 
     this.$customFilter = $("[data-custom-filter]");
 
@@ -56,7 +56,7 @@ function FileIndex(mediaType, controller) {
     this.tagRepository = new TagRepository();
 }
 
-FileIndex.prototype.renderPages = function () {
+MediaIndex.prototype.renderPages = function () {
 
     var totalPages = Math.ceil(this.totalFiles / this.filesPerPage);
 
@@ -93,7 +93,7 @@ FileIndex.prototype.renderPages = function () {
     }
 }
 
-FileIndex.prototype.renderSubFilesAsync = function () {
+MediaIndex.prototype.renderSubFilesAsync = function () {
 
     var deferred = $.Deferred();
     var self = this;
@@ -107,9 +107,9 @@ FileIndex.prototype.renderSubFilesAsync = function () {
 
             if (paginatedSubFiles.CurrentPage.length !== 0) {
 
-                paginatedSubFiles.CurrentPage.forEach(function (subFileInfo, subFileIndex) {
+                paginatedSubFiles.CurrentPage.forEach(function (subFileInfo, subMediaIndex) {
 
-                    self.renderSubFile(subFileInfo, ((self.page - 1) * self.filesPerPage) + subFileIndex + 1);
+                    self.renderSubFile(subFileInfo, ((self.page - 1) * self.filesPerPage) + subMediaIndex + 1);
                 });
             }
             else {
@@ -133,7 +133,7 @@ FileIndex.prototype.renderSubFilesAsync = function () {
     return deferred.promise();
 };
 
-FileIndex.prototype.renderSubFile = function (subFileInfo, subFileIndex) {
+MediaIndex.prototype.renderSubFile = function (subFileInfo, subMediaIndex) {
 
     var $filePreview = this.$fileTemplate
         .clone()
@@ -147,7 +147,7 @@ FileIndex.prototype.renderSubFile = function (subFileInfo, subFileIndex) {
         "View?path=" +
         subFileInfo.Path +
         "&page=" +
-        subFileIndex +
+        subMediaIndex +
         "&filter=" +
         this.filter;
 
@@ -159,7 +159,7 @@ FileIndex.prototype.renderSubFile = function (subFileInfo, subFileIndex) {
     this.$fileList.append($filePreview);
 }
 
-FileIndex.prototype.renderSubDirectoriesAsync = function () {
+MediaIndex.prototype.renderSubDirectoriesAsync = function () {
 
     var deferred = $.Deferred();
     var self = this;
@@ -195,7 +195,7 @@ FileIndex.prototype.renderSubDirectoriesAsync = function () {
     return deferred.promise();
 };
 
-FileIndex.prototype.renderSubDirectory = function (subDirectoryInfo) {
+MediaIndex.prototype.renderSubDirectory = function (subDirectoryInfo) {
 
     var $directoryPreview = this.$directoryTemplate
         .clone()
@@ -210,7 +210,7 @@ FileIndex.prototype.renderSubDirectory = function (subDirectoryInfo) {
     this.$directoryList.append($directoryPreview);
 }
 
-FileIndex.prototype.renderSteppingStonesAsync = function () {
+MediaIndex.prototype.renderSteppingStonesAsync = function () {
 
     var self = this;
     var deferred = $.Deferred();
@@ -236,7 +236,7 @@ FileIndex.prototype.renderSteppingStonesAsync = function () {
     return deferred.promise();
 }
 
-FileIndex.prototype.generateSteppingStone = function (text, path) {
+MediaIndex.prototype.generateSteppingStone = function (text, path) {
 
     var $steppingstone = $("<a>")
         .text(text)
@@ -250,7 +250,7 @@ FileIndex.prototype.generateSteppingStone = function (text, path) {
  * Initialises the file index
  * @param {string} mediaType
  */
-FileIndex.prototype.initialiseAsync = function () {
+MediaIndex.prototype.initialiseAsync = function () {
 
     var deferred = $.Deferred();
     var self = this;
@@ -289,7 +289,7 @@ FileIndex.prototype.initialiseAsync = function () {
     return deferred.promise();
 }
 
-FileIndex.prototype.addEventHandlers = function () {
+MediaIndex.prototype.addEventHandlers = function () {
 
     var self = this;
 
@@ -348,7 +348,7 @@ FileIndex.prototype.addEventHandlers = function () {
 /**
  * Adds any actions to the page which require the files and directories to already be loaded
  */
-FileIndex.prototype.addMediaDependentActions = function () {
+MediaIndex.prototype.addMediaDependentActions = function () {
 
     var self = this;
     var numberOfFiles = $("[data-files]").find("li").length;
@@ -385,7 +385,7 @@ FileIndex.prototype.addMediaDependentActions = function () {
 
 }
 
-FileIndex.prototype.addTagsAsync = function () {
+MediaIndex.prototype.addTagsAsync = function () {
 
     var deferred = $.Deferred();
     var self = this;
@@ -409,7 +409,7 @@ FileIndex.prototype.addTagsAsync = function () {
     return deferred.promise();
 }
 
-FileIndex.prototype.addTagsToDirectoriesAsync = function () {
+MediaIndex.prototype.addTagsToDirectoriesAsync = function () {
 
     var self = this;
     var tagNames = this.$tagName.val();
@@ -452,7 +452,7 @@ FileIndex.prototype.addTagsToDirectoriesAsync = function () {
     return deferred.promise();
 }
 
-FileIndex.prototype.addTagsToFilesAsync = function () {
+MediaIndex.prototype.addTagsToFilesAsync = function () {
 
     var self = this;
     var tagNames = this.$tagName.val();
@@ -493,7 +493,7 @@ FileIndex.prototype.addTagsToFilesAsync = function () {
     return deferred.promise();
 }
 
-FileIndex.prototype.renderTagListAsync = function () {
+MediaIndex.prototype.renderTagListAsync = function () {
 
     var deferred = $.Deferred();
     var self = this;
@@ -516,7 +516,7 @@ FileIndex.prototype.renderTagListAsync = function () {
     return deferred.promise();
 }
 
-FileIndex.prototype.addTagToList = function (tagName) {
+MediaIndex.prototype.addTagToList = function (tagName) {
 
     var self = this;
     var $tagLink = $("<li>").addClass("tagList_item").text(tagName);
@@ -541,7 +541,7 @@ FileIndex.prototype.addTagToList = function (tagName) {
     this.$tagList.append($tagLink);
 }
 
-FileIndex.prototype.applyFilter = function () {
+MediaIndex.prototype.applyFilter = function () {
 
     var filterString = this.$customFilter.val();
     var queryString = window.location.search;

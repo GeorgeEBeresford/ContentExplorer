@@ -106,11 +106,11 @@
         <div class="controls">
             <label class="controls_label controls_field">
                 Slideshow Enabled
-                <input type="checkbox" value="SlideshowEnabled" data-slideshow-enabled class="controls_input-checkbox" />
+                <input type="checkbox" value="SlideshowEnabled" data-slideshow-enabled class="controls_input-checkbox"/>
             </label>
             <label class="controls_label controls_field">
                 Delay (in seconds)
-                <input type="text" value="3" data-slideshow-delay class="controls_input" />
+                <input type="text" value="3" data-slideshow-delay class="controls_input"/>
             </label>
         </div>
     </div>
@@ -118,5 +118,5 @@
 
 @section scripts {
 
-    @Scripts.Render("~/bundles/scripts/image/view")
+    @RenderSection("scripts", false)
 }

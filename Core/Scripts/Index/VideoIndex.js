@@ -4,12 +4,12 @@
  */
 function VideoIndex() {
 
-    FileIndex.call(this, "video", "Video");
+    MediaIndex.call(this, "video", "Video");
 
     this.$actions = $("[data-actions='video']");
 }
 
-VideoIndex.prototype = Object.create(FileIndex.prototype);
+VideoIndex.prototype = Object.create(MediaIndex.prototype);
 
 VideoIndex.prototype.renderSubDirectory = function (subDirectoryInfo) {
 

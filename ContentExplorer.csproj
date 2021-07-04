@@ -177,10 +177,10 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Core\Images\ajax-loader.gif" />
-    <Content Include="Core\Scripts\Common\FileIndex.js" />
+    <Content Include="Core\Scripts\Index\MediaIndex.js" />
     <Content Include="Core\Scripts\Common\HttpRequester.js" />
-    <Content Include="Core\Scripts\Common\MediaRepository.js" />
-    <Content Include="Core\Scripts\Common\TagRepository.js" />
+    <Content Include="Core\Scripts\Common\Repositories\MediaRepository.js" />
+    <Content Include="Core\Scripts\Common\Repositories\TagRepository.js" />
     <Content Include="Core\Styles\Modules\_BootstrapTheme.scss" />
     <None Include="Core\Styles\Modules\_Bootstrap.scss" />
     <Content Include="Core\Styles\Site.css">
@@ -192,10 +192,10 @@
     <Content Include="favicon.ico" />
     <Content Include="Core\Fonts\glyphicons-halflings-regular.svg" />
     <Content Include="Global.asax" />
-    <Content Include="Core\Scripts\Video\Index.js" />
-    <Content Include="Core\Scripts\Video\View.js" />
-    <Content Include="Core\Scripts\Image\Index.js" />
-    <Content Include="Core\Scripts\Image\View.js" />
+    <Content Include="Core\Scripts\Index\VideoIndex.js" />
+    <Content Include="Core\Scripts\View\VideoView.js" />
+    <Content Include="Core\Scripts\Index\ImageIndex.js" />
+    <Content Include="Core\Scripts\View\ImageView.js" />
     <Content Include="Core\Scripts\Common\bootstrap.js" />
     <Content Include="Core\Scripts\Common\bootstrap.min.js" />
     <Content Include="Core\Styles\Site.scss" />
@@ -231,9 +231,11 @@
     <Content Include="Views\Image\View.cshtml" />
     <Content Include="Views\Video\View.cshtml" />
     <Content Include="Views\Shared\_Index.cshtml" />
+    <None Include="Views\Shared\_View.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
+    <Folder Include="Core\Scripts\Image\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Core\Fonts\glyphicons-halflings-regular.woff2" />

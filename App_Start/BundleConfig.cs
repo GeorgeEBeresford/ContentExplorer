@@ -24,22 +24,31 @@ namespace ContentExplorer
                 "~/Core/Scripts/Common/modernizr-*",
                 "~/Core/Scripts/Common/bootstrap.js",
                 "~/Core/Scripts/Common/HttpRequester.js",
-                "~/Core/Scripts/Common/MediaRepository.js",
-                "~/Core/Scripts/Common/TagRepository.js",
-                "~/Core/Scripts/Common/FileIndex.js"
+                "~/Core/Scripts/Common/Repositories/MediaRepository.js",
+                "~/Core/Scripts/Common/Repositories/TagRepository.js"
             ));
 
-            bundles.Add(new ScriptBundle("~/bundles/scripts/image/view").Include(
-                "~/Core/Scripts/Image/View.js"));
+            bundles.Add(new ScriptBundle("~/bundles/scripts/image/view")
+                .Include("~/Core/Scripts/View/ImageView.js")
+            );
 
-            bundles.Add(new ScriptBundle("~/bundles/scripts/image/index").Include(
-                "~/Core/Scripts/Image/Index.js"));
+            bundles.Add(new ScriptBundle("~/bundles/scripts/video/view")
+                .Include("~/Core/Scripts/View/VideoView.js")
+            );
 
-            bundles.Add(new ScriptBundle("~/bundles/scripts/video/view").Include(
-                "~/Core/Scripts/Video/View.js"));
+            bundles.Add(new ScriptBundle("~/bundles/scripts/image/index")
+                .Include(
+                    "~/Core/Scripts/Index/MediaIndex.js",
+                    "~/Core/Scripts/Index/ImageIndex.js"
+                )
+            );
 
-            bundles.Add(new ScriptBundle("~/bundles/scripts/video/index").Include(
-                "~/Core/Scripts/Video/Index.js"));
+            bundles.Add(new ScriptBundle("~/bundles/scripts/video/index")
+                .Include(
+                    "~/Core/Scripts/Index/MediaIndex.js",
+                    "~/Core/Scripts/Index/VideoIndex.js"
+                )
+            );
         }
     }
 }
