@@ -6,7 +6,6 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Web.Mvc;
 using ContentExplorer.Models;
-using ContentExplorer.Models.ViewModels;
 using ContentExplorer.Services;
 
 namespace ContentExplorer.Controllers
@@ -43,25 +42,12 @@ namespace ContentExplorer.Controllers
                 return RedirectToAction("Index", new { page, filter });
             }
 
-            ICollection<FileInfo> validFiles = GetMatchingFiles(directoryInfo, filter).ToList();
-
-            int videosPerPage = 50;
-            ViewBag.FilesPerPage = videosPerPage;
-
-            DirectoryViewModel videosViewModel = new DirectoryViewModel
-            {
-                FileInfos = validFiles
-                    .Skip(videosPerPage * (page.Value - 1)).Take(videosPerPage)
-                    .ToList(),
-                FileCount = validFiles.Count(),
-                DirectoryInfos = directoryInfo.GetDirectories()
-            };
-
+            ViewBag.FilesPerPage = 50;
             ViewBag.Directory = directoryInfo;
             ViewBag.Page = page;
             ViewBag.Filter = filter;
 
-            return View(videosViewModel);
+            return View();
         }
 
         [HttpGet]

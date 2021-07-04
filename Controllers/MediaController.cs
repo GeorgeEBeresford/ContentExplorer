@@ -4,6 +4,7 @@ using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Web;
 using System.Web.Mvc;
 using ContentExplorer.Models;
 using ContentExplorer.Models.ViewModels;
@@ -194,9 +195,15 @@ namespace ContentExplorer.Controllers
             return directoryWithParents;
         }
 
-        private string GetUrl(FileSystemInfo directoryInfo)
+        private string GetUrl(FileSystemInfo fileSystemInfo)
         {
-            return directoryInfo.FullName.Substring(ConfigurationManager.AppSettings["BaseDirectory"].Length + 1).Replace("\\", "/");
+            string rawUrl = fileSystemInfo.FullName.Substring(ConfigurationManager.AppSettings["BaseDirectory"].Length + 1);
+            string encodedUrl = rawUrl
+                .Replace("'", "%27")
+                .Replace("\\", "/")
+                .Replace("#", "%23");
+
+            return encodedUrl;
         }
 
         private string GetHierarchyRoot(string mediaType)

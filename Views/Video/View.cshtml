@@ -10,7 +10,11 @@
 
     ViewBag.Title = video.Directory.Name + " - " + video.Name;
 
-    string videoPath = Path.Combine(cdn, baseDirectory, relativeDirectory, video.Name).Replace("\\", "/");
+    string videoPath = Path.Combine(cdn, baseDirectory, relativeDirectory, video.Name)
+                .Replace("'", "%27")
+                .Replace("\\", "/")
+                .Replace("#", "%23");
+
     string baseSiteDirectory = ConfigurationManager.AppSettings["BaseDirectory"];
 
     Dictionary<string, string> extensionsToMimeTypes = new Dictionary<string, string>

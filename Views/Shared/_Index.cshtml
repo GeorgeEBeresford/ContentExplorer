@@ -8,8 +8,6 @@
 }
 
 @using System.Configuration
-@using ContentExplorer.Services
-@model ContentExplorer.Models.ViewModels.DirectoryViewModel
 
 <li class="directory_item" data-template="directory" style="display: none; background-size: cover; background-position: center center">
     <a href="" class="directory_link"></a>
@@ -22,8 +20,8 @@
 <li class="media_item" data-template="file" style="display: none; background-size: cover">
     <a href="" class="media_link"></a>
     <label class="media_name">
-        <span data-file-name></span>
         <input type="checkbox" data-tag-selector data-tag-type="file" />
+        <span data-file-name></span>
     </label>
 </li>
 
@@ -52,25 +50,25 @@
         </a>
     }
 
-    <label for="txtFilter">
-        Custom filter
-        <input type="text" id="txtFilter" value="@ViewBag.Filter" class="input-sm" data-custom-filter />
-        <button style="@(ViewBag.Filter != "" ? "display: inline-block" : "display: none")" data-clear-filter>X</button>
-    </label>
-    <button class="btn btn-default" data-apply-filter>Apply Custom Filter</button>
+    <div data-filter>
+        <label class="input-group" for="txtFilter">
+            Custom filter
+            <input type="text" id="txtFilter" value="@ViewBag.Filter" class="input-sm" data-custom-filter />
+            <button style="@(ViewBag.Filter != "" ? "display: inline-block" : "display: none")" data-clear-filter>X</button>
+        </label>
+        <button class="btn btn-default" data-apply-filter>Apply Custom Filter</button>
+    </div>
 
-    <ul class="tagList" data-tags-for-folder>
-    </ul>
-
-    @if (Model.FileInfos.Any() || Model.DirectoryInfos.Any())
-    {
+    <div data-tagging style="display: none">
+        <ul class="tagList" data-tags-for-folder></ul>
         <h2>Add Tags</h2>
         <label class="input-group">
             Tag Name
             <input class="input-sm" type="text" data-tag-name />
             <button class="btn btn-default" data-add-tag>Add Tags</button>
         </label>
-    }
+    </div>
+
 </div>
 <div class="content_sidebar panel">
 
@@ -78,7 +76,7 @@
 
     <div class="btn-block" data-media-selection></div>
 
-    <section data-directories>
+    <section style="display: none" data-directories>
         <h1>Directories</h1>
         <ul class="directory_list" data-directory-list></ul>
     </section>

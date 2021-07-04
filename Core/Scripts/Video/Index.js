@@ -1,6 +1,10 @@
-function VideoIndex(mediaType) {
+/**
+ * An object that displays a list of videos in a directory
+ * @class
+ */
+function VideoIndex() {
 
-    FileIndex.call(this, mediaType, "Video");
+    FileIndex.call(this, "video", "Video");
 
     this.$actions = $("[data-actions='video']");
 }
@@ -77,6 +81,6 @@ VideoIndex.prototype.addMediaDependentActions = function () {
 
 $(function () {
 
-    var fileIndex = new VideoIndex("video");
+    var fileIndex = new VideoIndex();
     fileIndex.initialiseAsync();
 })

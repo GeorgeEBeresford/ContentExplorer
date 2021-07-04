@@ -11,13 +11,15 @@ function FileIndex(mediaType, controller) {
 
     this.$applyFilter = $("[data-apply-filter]");
 
-    this.$addTag = $("[data-add-tag]");
-
-    this.$tagName = $("[data-tag-name]");
-
     this.$selectableForTagging = $("[data-tag-selector]").not("[data-template]");
 
-    this.$tagList = $("[data-tags-for-folder]");
+    this.$taggingContainer = $("[data-tagging]");
+
+    this.$tagList = this.$taggingContainer.find("[data-tags-for-folder]");
+
+    this.$tagName = this.$taggingContainer.find("[data-tag-name]");
+
+    this.$addTag = this.$taggingContainer.find("[data-add-tag]");
 
     this.$clearFilter = $("[data-clear-filter]");
 
@@ -165,10 +167,21 @@ FileIndex.prototype.renderSubDirectoriesAsync = function () {
     this.mediaRepository.getSubDirectoriesAsync(this.directoryPath, this.mediaType, this.filter)
         .then(function (subDirectoryInfos) {
 
-            subDirectoryInfos.forEach(function (subDirectoryInfo) {
+            var $directories = $("[data-directories]");
 
-                self.renderSubDirectory(subDirectoryInfo);
-            });
+            if (subDirectoryInfos.length !== 0) {
+
+                subDirectoryInfos.forEach(function (subDirectoryInfo) {
+
+                    self.renderSubDirectory(subDirectoryInfo);
+                });
+            }
+            else {
+
+                $directories.find("h1").remove();
+            }
+
+            $directories.show();
 
             self.$selectableForTagging = $("[data-tag-selector]").not("[data-template]");
 
@@ -343,8 +356,12 @@ FileIndex.prototype.addMediaDependentActions = function () {
 
     if (numberOfFiles === 0 && numberOfDirectories === 0) {
 
+        this.$taggingContainer.hide();
+
         return;
     }
+
+    this.$taggingContainer.show();
 
     var $mediaSelection = $("[data-media-selection]");
 

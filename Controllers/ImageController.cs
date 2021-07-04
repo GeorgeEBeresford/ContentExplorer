@@ -42,37 +42,13 @@ namespace ContentExplorer.Controllers
             {
                 return RedirectToAction("Index", new { page, filter });
             }
-            ICollection<FileInfo> validFiles = GetOrderedFiles(directoryInfo, filter).ToList();
 
-            int imagesPerPage = 50;
-            ViewBag.FilesPerPage = imagesPerPage;
-
-            FileTypeService fileTypeService = new FileTypeService();
-
-            ICollection<DirectoryInfo> subDirectories = directoryInfo
-                .EnumerateDirectories()
-                .Where(directory =>
-                    directory.EnumerateFiles("*.*", SearchOption.AllDirectories)
-                        .Any(file =>
-                            fileTypeService.IsFileImage(file.Name) && ImageMatchesFilter(file, filter)
-                        )
-                )
-                .ToList();
-
-            DirectoryViewModel imagesViewModel = new DirectoryViewModel
-            {
-                FileInfos = validFiles
-                    .Skip(imagesPerPage * (page.Value - 1)).Take(imagesPerPage)
-                    .ToList(),
-                FileCount = validFiles.Count(),
-                DirectoryInfos = subDirectories
-            };
-
+            ViewBag.FilesPerPage = 50;
             ViewBag.Directory = directoryInfo;
             ViewBag.Page = page;
             ViewBag.Filter = filter;
 
-            return View(imagesViewModel);
+            return View();
         }
 
         [HttpGet]
@@ -91,7 +67,8 @@ namespace ContentExplorer.Controllers
 
             string imageWebPath = Path.Combine(cdn, baseDirectory, directoryPath, image.Name)
                 .Replace("'", "%27")
-                .Replace("\\", "/");
+                .Replace("\\", "/")
+                .Replace("#", "%23");
 
             ImageViewModel imageViewModel = new ImageViewModel
             {
