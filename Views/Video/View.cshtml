@@ -1,124 +1,21 @@
 ﻿@{
-    string baseDirectory = ConfigurationManager.AppSettings["VideosPath"];
-    string cdn = ConfigurationManager.AppSettings["CDNPath"];
-    string relativeDirectory = ViewBag.Path;
-    int currentPage = ViewBag.Id;
-    string filter = ViewBag.Filter;
-    FileInfo media = ViewBag.Media;
-    int maxPages = ViewBag.MediaCount;
-    string directoryPath = ViewBag.Path;
+    ViewBag.BaseDirectory = ConfigurationManager.AppSettings["ImagesPath"];
 
-    ViewBag.Title = media.Directory.Name + " - " + media.Name;
-
-    string mediaPath = Path.Combine(cdn, baseDirectory, relativeDirectory, media.Name)
-                .Replace("'", "%27")
-                .Replace("\\", "/")
-                .Replace("#", "%23");
-
-    string baseSiteDirectory = ConfigurationManager.AppSettings["BaseDirectory"];
-
-    Dictionary<string, string> extensionsToMimeTypes = new Dictionary<string, string>
-{
-        { ".mp4", "video/mp4" },
-        { ".ogg", "video/ogg" },
-    };
-}
-
-@helper RenderThumbnail(string mediaFilePath, string mediaName, string mediaWebPath)
-{
-    string imageName = string.Format("{0}.jpg", mediaName);
-    string thumbnailLocation = Path.Combine(mediaFilePath, imageName);
-
-    if (new FileInfo(thumbnailLocation).Exists == false)
-    {
-        using (Stream jpgStream = new FileStream(thumbnailLocation, FileMode.Create))
-        {
-            ConvertSettings convertSettings = new ConvertSettings
-            {
-                VideoFrameSize = "300x300",
-            };
-
-            FFMpegConverter ffMpeg = new NReco.VideoConverter.FFMpegConverter();
-            ffMpeg.GetVideoThumbnail(Path.Combine(mediaFilePath, mediaName), jpgStream, 10, convertSettings);
-        }
-    }
-
-    string thumbnailWebPath = Path.Combine(mediaWebPath, imageName);
-    <img src="@thumbnailWebPath" class="button_mediapreview" />
-}
-
-
-@helper RenderSteppingStones(DirectoryInfo parentDirectory, string baseSiteDirectory, string mediaDirectory, string filter)
-{
-
-
-    if (parentDirectory.Parent != null && parentDirectory.Parent.FullName != baseSiteDirectory)
-    {
-        @RenderSteppingStones(parentDirectory.Parent, baseSiteDirectory, mediaDirectory, filter)
-    }
-    <a class="steppingstone_item" href="@Url.Action("Index", new { path = parentDirectory.FullName.Substring(baseSiteDirectory.Length + mediaDirectory.Length + 1), filter = filter })">@(parentDirectory.Name)</a>
+    Layout = "../Shared/_View.cshtml";
 }
 
 @using System.Configuration
-@using NReco.VideoConverter
 
-<nav class="steppingstone_list">
-    @RenderSteppingStones(media.Directory, baseSiteDirectory, baseDirectory, filter)
-</nav>
-
-<a class="mediaview_navbutton" href="@Url.Action("View", new {path = relativeDirectory, page = currentPage - 1, filter = filter})"><</a>
-<div class="mediaview">
-    <video controls loop class="mediaview_media">
-        @{
-            if (extensionsToMimeTypes.ContainsKey(media.Extension))
-            {
-                <source src="@mediaPath" type="@extensionsToMimeTypes[media.Extension]" />
-            }
-            else
-            {
-                <source src="@mediaPath" />
-            }
-        }
-    </video>
-    <div class="mediaview_name">@media.Name</div>
-</div>
-<a class="mediaview_navbutton-right" href="@Url.Action("View", new {path = relativeDirectory, page = currentPage + 1, filter = filter})">></a>
-
-@if (maxPages > 1)
+@section MediaView
 {
-    <div class="button_wrapper">
-        <div class="button_list">
-            @{
-                IEnumerable<FileInfo> filePreviewEnumerable = ViewBag.Previews as IEnumerable<FileInfo>;
-                ICollection<FileInfo> filePreviews = filePreviewEnumerable.ToList();
-                int previewPage = ViewBag.StartingPreview;
-                int previewIndex = 0;
-            }
-
-            @while (previewIndex < filePreviews.Count)
-            {
-                FileInfo mediaFile = filePreviews.ElementAt(previewIndex);
-                string previewPath = mediaFile.Directory.FullName.Replace("\\", "/");
-
-                if (previewPage != currentPage)
-                {
-                    <a href="@Url.Action("View", new {path = relativeDirectory, page = previewPage, filter = filter})" class="button_medialink">
-                        @RenderThumbnail(previewPath, mediaFile.Name, Path.Combine(cdn, baseDirectory, directoryPath))
-                    </a>
-                }
-                else
-                {
-                    <div class="button_medialink-disabled">
-                        @RenderThumbnail(previewPath, mediaFile.Name, Path.Combine(cdn, baseDirectory, directoryPath))
-                    </div>
-                }
-
-                previewPage++;
-                previewIndex++;
-            }
-        </div>
-        <div>
-            <b>@currentPage</b> of @maxPages
-        </div>
+    <div class="mediaview" data-media-view>
+        <img src="../Core/Images/ajax-loader.gif" style="margin-top: 10px;" data-loader="media" />
+        <div data-video-container></div>
+        <div class="mediaview_name" data-media-name></div>
     </div>
+}
+
+@section scripts {
+
+    @Scripts.Render("~/bundles/scripts/video/view")
 }

@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Web.Mvc;
-using ContentExplorer.Models;
 using ContentExplorer.Models.ViewModels;
 using ContentExplorer.Services;
 
@@ -56,7 +55,7 @@ namespace ContentExplorer.Controllers
         }
 
         [HttpGet]
-        public JsonResult GetSubFiles(string currentDirectory, string mediaType, int page, string filter)
+        public JsonResult GetSubFiles(string currentDirectory, string mediaType, int page, string filter, int itemsPerPage)
         {
             string hierarchyRoot = GetHierarchyRoot(mediaType);
             string websiteDiskLocation = ConfigurationManager.AppSettings["BaseDirectory"];
@@ -71,10 +70,12 @@ namespace ContentExplorer.Controllers
             }
 
             DirectoryInfo hierarchyRootInfo = new DirectoryInfo(hierarchyRootDiskLocation);
-            IEnumerable<FileInfo> subFiles = GetMatchingSubFiles(currentDirectoryInfo, mediaType, filter, false);
+            ICollection<FileInfo> subFiles = GetMatchingSubFiles(currentDirectoryInfo, mediaType, filter, false)
+                .ToList();
+
             ICollection<MediaPreviewViewModel> filePreviews = OrderAlphabetically(subFiles)
-                .Skip(50 * (page - 1))
-                .Take(50)
+                .Skip(itemsPerPage * (page - 1))
+                .Take(itemsPerPage)
                 .Select(subFile => GetMediaPreviewFromSubFile(subFile, hierarchyRootInfo))
                 .ToArray();
 

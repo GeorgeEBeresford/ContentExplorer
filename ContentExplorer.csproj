@@ -163,7 +163,7 @@
     <Compile Include="Models\TagLink.cs" />
     <Compile Include="Models\Tag.cs" />
     <Compile Include="Models\ViewModels\DirectoryHeirarchyViewModel.cs" />
-    <Compile Include="Models\ViewModels\MediayPreviewViewModel.cs" />
+    <Compile Include="Models\ViewModels\MediaPreviewViewModel.cs" />
     <Compile Include="Models\ViewModels\DirectoryViewModel.cs" />
     <Compile Include="Models\ViewModels\ImageViewModel.cs" />
     <Compile Include="Models\ViewModels\PaginatedViewModel.cs" />

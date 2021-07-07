@@ -26,7 +26,7 @@ function MediaUiFactory() {
 
         var $steppingstone = $("<a>")
             .text(text)
-            .attr("href", window.location.origin + window.location.pathname + "?path=" + path + "&filter=" + filter)
+            .attr("href", window.location.origin + window.location.pathname + "/../Index" + "?path=" + path + "&filter=" + filter)
             .addClass("steppingstone_item");
 
         return $steppingstone;

@@ -6,6 +6,36 @@
 
 @using System.Configuration
 
+@section BeforeContent
+{
+    <div class="slideshow_stopper" data-stop-slideshow>
+        X
+    </div>
+}
+
+@section MediaView
+{
+    <div class="mediaview" data-media-view>
+        <a href="" target="_blank" data-media-link>
+            <img src="../Core/Images/ajax-loader.gif" style="margin-top: 10px;" data-loader="media" />
+            <img src="" class="mediaview_media" data-media style="display: none" />
+        </a>
+        <div class="mediaview_name" data-media-name></div>
+    </div>
+}
+
+@section Controls
+{
+    <label class="controls_label controls_field">
+        Slideshow Enabled
+        <input type="checkbox" value="SlideshowEnabled" data-slideshow-enabled class="controls_input-checkbox" />
+    </label>
+    <label class="controls_label controls_field">
+        Delay (in seconds)
+        <input type="text" value="3" data-slideshow-delay class="controls_input" />
+    </label>
+}
+
 @section scripts {
 
     @Scripts.Render("~/bundles/scripts/image/view")

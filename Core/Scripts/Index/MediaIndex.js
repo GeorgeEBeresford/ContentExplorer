@@ -11,7 +11,7 @@ function MediaIndex(mediaType, controller) {
 
     this.$applyFilter = $("[data-apply-filter]");
 
-    this.$selectableForTagging = $("[data-tag-selector]").not("[data-template]");
+    this.$selectableForTagging = $("[data-tag-selector]").not("[data-template] [data-tag-selector]");
 
     this.$taggingContainer = $("[data-tagging]");
 
@@ -100,7 +100,7 @@ MediaIndex.prototype.renderSubFilesAsync = function () {
     var deferred = $.Deferred();
     var self = this;
 
-    this.mediaRepository.getSubFilesAsync(this.directoryPath, this.mediaType, this.page, this.filter)
+    this.mediaRepository.getSubFilesAsync(this.directoryPath, this.mediaType, this.page, this.filter, 50)
         .then(function (paginatedSubFiles) {
 
             self.totalFiles = paginatedSubFiles.Total;
@@ -121,7 +121,7 @@ MediaIndex.prototype.renderSubFilesAsync = function () {
 
             $files.show();
 
-            self.$selectableForTagging = $("[data-tag-selector]").not("[data-template]");
+            self.$selectableForTagging = $("[data-tag-selector]").not("[data-template] [data-tag-selector]");
 
             self.renderPages();
 
@@ -185,7 +185,7 @@ MediaIndex.prototype.renderSubDirectoriesAsync = function () {
 
             $directories.show();
 
-            self.$selectableForTagging = $("[data-tag-selector]").not("[data-template]");
+            self.$selectableForTagging = $("[data-tag-selector]").not("[data-template] [data-tag-selector]");
 
             deferred.resolve();
         })
@@ -382,15 +382,15 @@ MediaIndex.prototype.addTagsAsync = function () {
     );
 
     addTagsToAll
-        .then(function () {
+        .then(function() {
 
             self.$tagName.val("");
             deferred.resolve();
         })
-        .fail(function () {
+        .fail(function() {
 
             deferred.reject();
-        })
+        });
 
     return deferred.promise();
 }
@@ -400,10 +400,10 @@ MediaIndex.prototype.addTagsToDirectoriesAsync = function () {
     var self = this;
     var tagNames = this.$tagName.val();
     var $selectedCheckboxes = this.$selectableForTagging.filter("[data-tag-type='directory']:checked");
+    var deferred = $.Deferred();
 
     if (tagNames === "" || $selectedCheckboxes.length === 0) {
 
-        var deferred = $.Deferred();
         deferred.resolve();
         return deferred.promise();
     }
@@ -416,7 +416,6 @@ MediaIndex.prototype.addTagsToDirectoriesAsync = function () {
         directoryPaths.push(filePath);
     });
 
-    var deferred = $.Deferred();
     var tags = tagNames.split(",");
     this.tagRepository.addTagsToDirectories(directoryPaths, tags, this.mediaType)
         .then(function () {

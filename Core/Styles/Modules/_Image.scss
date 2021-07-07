@@ -92,25 +92,3 @@
         font-weight: bold;
     }
 }
-
-.slideshow {
-
-    &_stopper {
-        position: fixed;
-        right: 0;
-        top: 0;
-        width: 30px;
-        height: 30px;
-        background-color: #dedede;
-        font-size: 2rem;
-        z-index: 5;
-        text-align: center;
-        cursor: pointer;
-
-        &:hover {
-
-            background-color: #ababab;
-            color: #FFF;
-        }
-    }
-}

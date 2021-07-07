@@ -7275,6 +7275,11 @@ fieldset[disabled] .btn-danger.active {
   .mediaview_media {
     display: inline-block;
     max-width: 90%; }
+    .mediaview_media-focused {
+      position: absolute;
+      left: 0;
+      top: 0;
+      z-index: 4; }
   .mediaview_navbutton, .mediaview_navbutton-right {
     width: 5%;
     height: 100%;
@@ -7295,6 +7300,26 @@ fieldset[disabled] .btn-danger.active {
     padding: 8px;
     margin-top: 10px;
     font-weight: bold; }
+  .mediaview-focused {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 4; }
+
+.slideshow_stopper {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 30px;
+  height: 30px;
+  background-color: #dedede;
+  font-size: 2rem;
+  z-index: 5;
+  text-align: center;
+  cursor: pointer; }
+  .slideshow_stopper:hover {
+    background-color: #ababab;
+    color: #FFF; }
 
 .video_list {
   display: block;
@@ -7429,21 +7454,6 @@ fieldset[disabled] .btn-danger.active {
     padding: 8px;
     margin-top: 10px;
     font-weight: bold; }
-
-.slideshow_stopper {
-  position: fixed;
-  right: 0;
-  top: 0;
-  width: 30px;
-  height: 30px;
-  background-color: #dedede;
-  font-size: 2rem;
-  z-index: 5;
-  text-align: center;
-  cursor: pointer; }
-  .slideshow_stopper:hover {
-    background-color: #ababab;
-    color: #FFF; }
 
 body {
   padding-top: 50px;

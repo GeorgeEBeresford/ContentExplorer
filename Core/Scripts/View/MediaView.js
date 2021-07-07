@@ -1,4 +1,4 @@
-﻿function MediaView(mediaType) {
+﻿function MediaView(mediaType, controller) {
 
     this.siteBaseDirectory = $("[site-base-directory]").val();
     this.cdn = $("[data-cdn-path]").val();
@@ -8,22 +8,80 @@
 
     this.$previousButton = $("[data-button='previous']");
     this.$nextButton = $("[data-button='next']");
-    this.$MediaView = $("[data-media-view]");
-    this.$media = this.$MediaView.find("[data-media]");
-    this.$mediaName = this.$MediaView.find("[data-media-name]");
-    this.$mediaLink = this.$MediaView.find("[data-media-link]");
-    this.$pageButtons = $("[data-page-button]");
+    this.$mediaView = $("[data-media-view]");
+    this.$media = this.$mediaView.find("[data-media]");
+    this.$mediaName = this.$mediaView.find("[data-media-name]");
+    this.$mediaLink = this.$mediaView.find("[data-media-link]");
+    this.$pageButtons = $("[data-page-button-wrapper]");
     this.$currentPage = $("[data-current-page]");
     this.$slideshowDelay = $("[data-slideshow-delay]");
     this.$isSlideshowEnabled = $("[data-slideshow-enabled]");
     this.$navbars = $(".navbar,.MediaView_navbutton,.MediaView_navbutton-right,.steppingstone_list,.button_list");
     this.$mediaLoader = $("[data-loader='media']");
     this.$escapeslideShow = $("[data-stop-slideshow]");
+    this.$steppingStones = $("[data-stepping-stones]");
 
     this.isSlideshowEnabled = this.$isSlideshowEnabled.is(":checked");
     this.slideshowDelay = +this.$slideshowDelay.val();
+
+    /**
+     * The controller for the current media type
+     * @type {string}
+     */
+    this.controller = controller;
+
+    /**
+     * A repository for retrieving information about the current file or directory
+     * @type {MediaRepository}
+     */
     this.mediaRepository = new MediaRepository();
+
+    /**
+     * The kind of media we're processing
+     * @type {string}
+     */
     this.mediaType = mediaType;
+
+    /**
+     * A factory which produces common media-related elements
+     * @type {MediaUiFactory}
+     */
+    this.mediaUiFactory = new MediaUiFactory();
+}
+
+/**
+ * Initialises the current object
+ * @returns {JQuery.Promise<void>}
+ */
+MediaView.prototype.initialiseAsync = function () {
+
+    var deferred = $.Deferred();
+    var self = this;
+
+    // Load the media for the current page
+    var callAsynchronousInitialisers = $.when(
+        this.renderSteppingStonesAsync(),
+        this.navigatePagesAsync(0),
+        this.renderPageButtonsAsync()
+    );
+
+    callAsynchronousInitialisers
+        .then(function () {
+
+            // Initialise the rest of the page
+            self.slideshowThread();
+            self.addEventHandlers();
+            self.synchroniseFocus();
+
+            deferred.resolve();
+        })
+        .fail(function () {
+
+            deferred.reject();
+        });
+
+
+    return deferred.promise();
 }
 
 MediaView.prototype.addEventHandlers = function () {
@@ -80,26 +138,27 @@ MediaView.prototype.addEventHandlers = function () {
             }
         }
     );
+}
 
-    this.$media.on("load",
-        function () {
+MediaView.prototype.renderSteppingStonesAsync = function () {
 
-            self.$mediaLoader.hide();
-            self.$media.show();
+    var deferred = $.Deferred();
+    var self = this;
 
-            self.$media.css("width", "");
-            self.$media.css("height", "");
+    this.mediaRepository.getDirectoryHierarchyAsync(this.relativeDirectory, this.mediaType)
+        .then(function (directoryHierarchy) {
 
-            if (!self.isSlideshowEnabled) {
+            var $steppingStones = self.mediaUiFactory.generateSteppingStones(directoryHierarchy, self.filter);
+            self.$steppingStones.html($steppingStones);
 
-                self.unsetFocusedMediaDimensions();
-            }
-            else {
+            deferred.resolve();
+        })
+        .fail(function () {
 
-                self.setFocusedMediaDimensions();
-            }
-        }
-    );
+            deferred.reject();
+        });
+
+    return deferred.promise();
 }
 
 MediaView.prototype.synchroniseFocus = function () {
@@ -112,6 +171,86 @@ MediaView.prototype.synchroniseFocus = function () {
 
         this.defocusMedia();
     }
+}
+
+MediaView.prototype.renderPageButtonsAsync = function () {
+
+    var deferred = $.Deferred();
+    var self = this;
+
+    var fileNumber = +this.$currentPage.text();
+    var pageFromFileNumber = Math.ceil(fileNumber / 15);
+
+    this.mediaRepository.getSubFilesAsync(this.relativeDirectory, this.mediaType, pageFromFileNumber, this.filter, 15)
+        .then(function (mediaPreviews) {
+
+            self.$pageButtons.find("[data-page-button-list]").html("");
+
+            if (mediaPreviews.Total > 1) {
+
+                for (var mediaViewModelIndex = 0;
+                    mediaViewModelIndex < mediaPreviews.CurrentPage.length;
+                    mediaViewModelIndex++) {
+
+                    var mediaViewModel = mediaPreviews.CurrentPage[mediaViewModelIndex];
+                    self.renderPageButton(mediaViewModel, mediaViewModelIndex, pageFromFileNumber);
+                }
+            }
+
+            deferred.resolve();
+        })
+        .fail(function() {
+
+            deferred.reject();
+        });
+
+    return deferred.promise();
+}
+
+MediaView.prototype.renderPageButton = function (mediaViewModel, mediaViewModelIndex, page) {
+
+    var pageNumber = (mediaViewModelIndex + 1) + ((page - 1) * 15);
+
+    var $pageButton = $("<a>").attr("data-page-button", pageNumber);
+
+    if (pageNumber !== +this.$currentPage.text()) {
+
+        $pageButton
+            .attr("href",
+                "/" +
+                this.controller +
+                "/" +
+                "View" +
+                "?path=" +
+                this.relativeDirectory +
+                "&page=" +
+                pageNumber +
+                "&filter=" +
+                this.filter)
+            .addClass("button_medialink");
+    }
+    else {
+
+        $pageButton.addClass("button_medialink-disabled");
+    }
+
+    var $pagePreview = $("<div>")
+        .addClass("button_mediapreview")
+        .css("background-image", "url(\"" + this.cdn + "/" + this.formatThumbnailUrl(mediaViewModel.ThumbnailUrl) + "\")")
+        .css("background-size", "cover");
+
+    $pageButton.append($pagePreview);
+
+    this.$pageButtons.find("[data-page-button-list]").append($pageButton);
+}
+
+/**
+ * Ensures any thumbnail urls passed to page buttons have the correct formatting
+ * @param {string} thumbnailUrl
+ */
+MediaView.prototype.formatThumbnailUrl = function (thumbnailUrl) {
+
+    return thumbnailUrl;
 }
 
 MediaView.prototype.slideshowThread = function () {
@@ -178,20 +317,18 @@ MediaView.prototype.addPageIncrement = function (pageIncrement) {
 
 MediaView.prototype.refreshMediaDisplay = function (subFilePreview, previousMediaInformation) {
 
-    this.$media.attr("src", subFilePreview.ContentUrl).attr("alt", subFilePreview.Name);
     this.$mediaName.text(subFilePreview.Name);
-    this.$mediaLink.attr("href", subFilePreview.Content);
 
-    // Make current page navigatable
-    this.$pageButtons.filter(".button_medialink-disabled")
-        .removeClass("button_medialink-disabled")
-        .addClass("button_medialink")
-        .attr("href", "/Media/View?path=" + this.relativeDirectory + "&page=" + previousMediaInformation.pageId + "&filter=" + this.filter);
-
-    this.$pageButtons.filter("[data-page-button='" + this.$currentPage.text() + "']")
+    this.$pageButtons.find("[data-page-button='" + this.$currentPage.text() + "']")
         .removeClass("button_medialink")
         .addClass("button_medialink-disabled")
         .removeAttr("href");
+
+    this.$mediaLoader.hide();
+    this.$media.show();
+
+    this.$media.css("width", "");
+    this.$media.css("height", "");
 }
 
 MediaView.prototype.setFocusedMediaDimensions = function () {
@@ -240,8 +377,8 @@ MediaView.prototype.defocusMedia = function () {
     if (!this.$media.is(".MediaView_media")) {
 
         this.$media
-            .removeClass("MediaView_media-focused")
-            .addClass("MediaView_media");
+            .removeClass("mediaview_media-focused")
+            .addClass("mediaview_media");
 
         this.$navbars.show();
     }
@@ -252,8 +389,8 @@ MediaView.prototype.focusMedia = function () {
     if (!this.$media.is(".MediaView_media-focused")) {
 
         this.$media
-            .removeClass("MediaView_media")
-            .addClass("MediaView_media-focused");
+            .removeClass("mediaview_media")
+            .addClass("mediaview_media-focused");
 
         this.$navbars.hide();
     }
