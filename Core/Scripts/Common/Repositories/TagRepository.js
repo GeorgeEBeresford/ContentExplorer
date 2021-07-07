@@ -90,16 +90,18 @@ function TagRepository() {
 
     /**
      * Retrieves the tags for the given directory and mediaType
-     * @param {string} currentDirectory
-     * @param {string} mediaType
+     * @param {string} currentDirectory - 
+     * @param {string} mediaType - 
+     * @param {string} filter - 
      * @returns {JQuery.Promise<any>}
      */
-    this.getTagsAsync = function (currentDirectory, mediaType) {
+    this.getTagsAsync = function (currentDirectory, mediaType, filter) {
 
         var deferred = $.Deferred();
         var payload = {
             directoryName: currentDirectory,
-            mediaType: mediaType
+            mediaType: mediaType,
+            filter: filter
         };
 
         httpRequester.getAsync("GetDirectoryTags", controller, payload)

@@ -25,15 +25,22 @@ namespace ContentExplorer
                 "~/Core/Scripts/Common/bootstrap.js",
                 "~/Core/Scripts/Common/HttpRequester.js",
                 "~/Core/Scripts/Common/Repositories/MediaRepository.js",
-                "~/Core/Scripts/Common/Repositories/TagRepository.js"
+                "~/Core/Scripts/Common/Repositories/TagRepository.js",
+                "~/Core/Scripts/Common/Factories/MediaUiFactory.js"
             ));
 
             bundles.Add(new ScriptBundle("~/bundles/scripts/image/view")
-                .Include("~/Core/Scripts/View/ImageView.js")
+                .Include(
+                    "~/Core/Scripts/View/MediaView.js",
+                    "~/Core/Scripts/View/ImageView.js"
+                )
             );
 
             bundles.Add(new ScriptBundle("~/bundles/scripts/video/view")
-                .Include("~/Core/Scripts/View/VideoView.js")
+                .Include(
+                    "~/Core/Scripts/View/MediaView.js",
+                    "~/Core/Scripts/View/VideoView.js"
+                )
             );
 
             bundles.Add(new ScriptBundle("~/bundles/scripts/image/index")

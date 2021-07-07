@@ -21,13 +21,55 @@ namespace ContentExplorer.Models
         public int TagLinkId { get; set; }
         public int TagId { get; set; }
         public string FilePath { get; set; }
+        private Tag Tag { get; set; }
+
+        public Tag GetTag()
+        {
+            if (Tag != null)
+            {
+                return Tag;
+            }
+
+            Tag = Tag.GetById(TagId);
+            return Tag;
+        }
+
+        public static ICollection<TagLink> GetByDirectory(string directoryPath)
+        {
+            // The caller shouldn't have to care about which slash or case to use
+            directoryPath = directoryPath.Replace("/", "\\").ToLowerInvariant();
+
+            // We need to distinguish between files and directories with the same name but the caller shouldn't have to worry about it
+            directoryPath = directoryPath.TrimEnd("\\".ToCharArray());
+
+            string query = @"SELECT Tags.TagId, Tags.TagName, REPLACE(TagLinks.FilePath, '/', '\') AS [FilePath], TagLinks.TagLinkId
+                                FROM Tags
+                                INNER JOIN TagLinks ON Tags.TagId = TagLinks.TagId
+                                WHERE LOWER(REPLACE(TagLinks.FilePath, '/', '\')) LIKE @FilePath";
+
+            ICollection<IDictionary<string, object>> dataRows;
+            using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
+            {
+                dataRows = dbContext.GetDataRows(query, SqliteWrapper.GenerateParameter("@FilePath", $"{directoryPath}\\%"));
+            }
+
+            ICollection<TagLink> tagLinks = dataRows.Select(dataRow =>
+                    new TagLink(dataRow)
+                    {
+                        Tag = new Tag(dataRow)
+                    }
+                )
+                .ToList();
+
+            return tagLinks;
+        }
 
         public static ICollection<TagLink> GetByFile(string filePath)
         {
             // The caller shouldn't have to care about which slash or case to use
             filePath = filePath.Replace("/", "\\").ToLowerInvariant();
 
-            string query = @"SELECT FilePath, TagId, TagLinkId
+            string query = @"SELECT REPLACE(TagLinks.FilePath, '/', '\') AS [FilePath], TagId, TagLinkId
                                 FROM TagLinks
                                 WHERE LOWER(REPLACE(TagLinks.FilePath, '/', '\')) = @FilePath";
 
@@ -35,6 +77,28 @@ namespace ContentExplorer.Models
             using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
             {
                 dataRows = dbContext.GetDataRows(query, SqliteWrapper.GenerateParameter("@FilePath", filePath));
+            }
+
+            ICollection<TagLink> tagLinks = dataRows.Select(dataRow =>
+
+                    new TagLink(dataRow)
+                )
+                .ToList();
+
+            return tagLinks;
+        }
+
+        public static ICollection<TagLink> GetByTagName(string tagName)
+        {
+            string query = @"SELECT REPLACE(TagLinks.FilePath, '/', '\') AS [FilePath], TagLinks.TagId, TagLinks.TagLinkId
+                                FROM TagLinks
+                                INNER JOIN Tags ON TagLinks.TagId = Tags.TagId
+                                WHERE Tags.TagName = @TagName";
+
+            ICollection<IDictionary<string, object>> dataRows;
+            using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
+            {
+                dataRows = dbContext.GetDataRows(query, SqliteWrapper.GenerateParameter("@TagName", tagName));
             }
 
             ICollection<TagLink> tagLinks = dataRows.Select(dataRow =>
@@ -62,28 +126,6 @@ namespace ContentExplorer.Models
             }
 
             return isSuccess;
-        }
-
-        public static ICollection<TagLink> GetByTagName(string tagName)
-        {
-            string query = @"SELECT TagLinks.FilePath, TagLinks.TagId, TagLinks.TagLinkId
-                                FROM TagLinks
-                                INNER JOIN Tags ON TagLinks.TagId = Tags.TagId
-                                WHERE Tags.TagName = @TagName";
-
-            ICollection<IDictionary<string, object>> dataRows;
-            using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
-            {
-                dataRows = dbContext.GetDataRows(query, SqliteWrapper.GenerateParameter("@TagName", tagName));
-            }
-
-            ICollection<TagLink> tagLinks = dataRows.Select(dataRow =>
-
-                    new TagLink(dataRow)
-                )
-                .ToList();
-
-            return tagLinks;
         }
 
         public bool Create()

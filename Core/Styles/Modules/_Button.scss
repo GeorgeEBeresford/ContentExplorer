@@ -24,7 +24,7 @@
         }
     }
 
-    &_imagelink, &_videolink {
+    &_medialink {
         display: inline-block;
         border-radius: 4px;
         margin-right: 8px;
@@ -35,12 +35,12 @@
 
         &-disabled {
 
-            @extend .button_imagelink;
+            @extend .button_medialink;
             opacity: 0.6;
         }
     }
 
-    &_imagepreview, &_videopreview {
+    &_mediapreview {
         display: block;
         width: 100%;
         height: 100%;

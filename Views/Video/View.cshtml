@@ -4,13 +4,13 @@
     string relativeDirectory = ViewBag.Path;
     int currentPage = ViewBag.Id;
     string filter = ViewBag.Filter;
-    FileInfo video = ViewBag.Video;
-    int maxPages = ViewBag.VideoCount;
+    FileInfo media = ViewBag.Media;
+    int maxPages = ViewBag.MediaCount;
     string directoryPath = ViewBag.Path;
 
-    ViewBag.Title = video.Directory.Name + " - " + video.Name;
+    ViewBag.Title = media.Directory.Name + " - " + media.Name;
 
-    string videoPath = Path.Combine(cdn, baseDirectory, relativeDirectory, video.Name)
+    string mediaPath = Path.Combine(cdn, baseDirectory, relativeDirectory, media.Name)
                 .Replace("'", "%27")
                 .Replace("\\", "/")
                 .Replace("#", "%23");
@@ -24,10 +24,10 @@
     };
 }
 
-@helper RenderThumbnail(string videoFilePath, string videoName, string videoWebPath)
+@helper RenderThumbnail(string mediaFilePath, string mediaName, string mediaWebPath)
 {
-    string imageName = string.Format("{0}.jpg", videoName);
-    string thumbnailLocation = Path.Combine(videoFilePath, imageName);
+    string imageName = string.Format("{0}.jpg", mediaName);
+    string thumbnailLocation = Path.Combine(mediaFilePath, imageName);
 
     if (new FileInfo(thumbnailLocation).Exists == false)
     {
@@ -39,48 +39,48 @@
             };
 
             FFMpegConverter ffMpeg = new NReco.VideoConverter.FFMpegConverter();
-            ffMpeg.GetVideoThumbnail(Path.Combine(videoFilePath, videoName), jpgStream, 10, convertSettings);
+            ffMpeg.GetVideoThumbnail(Path.Combine(mediaFilePath, mediaName), jpgStream, 10, convertSettings);
         }
     }
 
-    string thumbnailWebPath = Path.Combine(videoWebPath, imageName);
-    <img src="@thumbnailWebPath" class="button_videopreview" />
+    string thumbnailWebPath = Path.Combine(mediaWebPath, imageName);
+    <img src="@thumbnailWebPath" class="button_mediapreview" />
 }
 
 
-@helper RenderSteppingStones(DirectoryInfo parentDirectory, string baseSiteDirectory, string videoDirectory, string filter)
+@helper RenderSteppingStones(DirectoryInfo parentDirectory, string baseSiteDirectory, string mediaDirectory, string filter)
 {
 
 
     if (parentDirectory.Parent != null && parentDirectory.Parent.FullName != baseSiteDirectory)
     {
-        @RenderSteppingStones(parentDirectory.Parent, baseSiteDirectory, videoDirectory, filter)
+        @RenderSteppingStones(parentDirectory.Parent, baseSiteDirectory, mediaDirectory, filter)
     }
-    <a class="steppingstone_item" href="@Url.Action("Index", new { path = parentDirectory.FullName.Substring(baseSiteDirectory.Length + videoDirectory.Length + 1), filter = filter })">@(parentDirectory.Name)</a>
+    <a class="steppingstone_item" href="@Url.Action("Index", new { path = parentDirectory.FullName.Substring(baseSiteDirectory.Length + mediaDirectory.Length + 1), filter = filter })">@(parentDirectory.Name)</a>
 }
 
 @using System.Configuration
 @using NReco.VideoConverter
 
 <nav class="steppingstone_list">
-    @RenderSteppingStones(video.Directory, baseSiteDirectory, baseDirectory, filter)
+    @RenderSteppingStones(media.Directory, baseSiteDirectory, baseDirectory, filter)
 </nav>
 
 <a class="mediaview_navbutton" href="@Url.Action("View", new {path = relativeDirectory, page = currentPage - 1, filter = filter})"><</a>
 <div class="mediaview">
-    <video controls loop class="mediaview_video">
+    <video controls loop class="mediaview_media">
         @{
-            if (extensionsToMimeTypes.ContainsKey(video.Extension))
+            if (extensionsToMimeTypes.ContainsKey(media.Extension))
             {
-                <source src="@videoPath" type="@extensionsToMimeTypes[video.Extension]" />
+                <source src="@mediaPath" type="@extensionsToMimeTypes[media.Extension]" />
             }
             else
             {
-                <source src="@videoPath" />
+                <source src="@mediaPath" />
             }
         }
     </video>
-    <div class="mediaview_name">@video.Name</div>
+    <div class="mediaview_name">@media.Name</div>
 </div>
 <a class="mediaview_navbutton-right" href="@Url.Action("View", new {path = relativeDirectory, page = currentPage + 1, filter = filter})">></a>
 
@@ -97,19 +97,19 @@
 
             @while (previewIndex < filePreviews.Count)
             {
-                FileInfo videoFile = filePreviews.ElementAt(previewIndex);
-                string previewPath = videoFile.Directory.FullName.Replace("\\", "/");
+                FileInfo mediaFile = filePreviews.ElementAt(previewIndex);
+                string previewPath = mediaFile.Directory.FullName.Replace("\\", "/");
 
                 if (previewPage != currentPage)
                 {
-                    <a href="@Url.Action("View", new {path = relativeDirectory, page = previewPage, filter = filter})" class="button_videolink">
-                        @RenderThumbnail(previewPath, videoFile.Name, Path.Combine(cdn, baseDirectory, directoryPath))
+                    <a href="@Url.Action("View", new {path = relativeDirectory, page = previewPage, filter = filter})" class="button_medialink">
+                        @RenderThumbnail(previewPath, mediaFile.Name, Path.Combine(cdn, baseDirectory, directoryPath))
                     </a>
                 }
                 else
                 {
-                    <div class="button_videolink-disabled">
-                        @RenderThumbnail(previewPath, videoFile.Name, Path.Combine(cdn, baseDirectory, directoryPath))
+                    <div class="button_medialink-disabled">
+                        @RenderThumbnail(previewPath, mediaFile.Name, Path.Combine(cdn, baseDirectory, directoryPath))
                     </div>
                 }
 

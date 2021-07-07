@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Web.Mvc;
 using ContentExplorer.Models;
+using ContentExplorer.Services;
 
 namespace ContentExplorer.Controllers
 {
@@ -76,15 +77,36 @@ namespace ContentExplorer.Controllers
         }
 
         [HttpGet]
-        public JsonResult GetDirectoryTags(string directoryName, string mediaType)
+        public JsonResult GetDirectoryTags(string directoryName, string mediaType, string filter)
         {
             directoryName = GetRootDirectory(mediaType) + "\\" + directoryName;
 
-            ICollection<Tag> tags = Tag.GetByDirectory(directoryName)
+            IFileSystemFilteringService fileSystemFilteringService = new FileSystemFilteringService();
+
+            string baseDirectory = ConfigurationManager.AppSettings["BaseDirectory"];
+
+            ICollection<TagLink> tagLinks = TagLink.GetByDirectory(directoryName);
+
+            var tagLinksGroupedByFile = tagLinks.GroupBy(tagLink => tagLink.FilePath).ToList();
+
+            var filteredTagLinks = tagLinksGroupedByFile
+                .Where(tagsLinksForFile =>
+                    fileSystemFilteringService.FileMatchesFilter(tagsLinksForFile, filter)
+                )
+                .ToList();
+
+            IEnumerable<Tag> tagsForDirectory = filteredTagLinks
+                .SelectMany(tagLinksForFile =>
+                    tagLinksForFile.Select(tagLinkForFile =>
+                        tagLinkForFile.GetTag()
+                    )
+                )
+                .GroupBy(tag => tag.TagName)
+                .Select(grouping => grouping.First())
                 .OrderBy(tag => tag.TagName)
                 .ToArray();
 
-            return Json(tags, JsonRequestBehavior.AllowGet);
+            return Json(tagsForDirectory, JsonRequestBehavior.AllowGet);
         }
 
         private string GetRootDirectory(string mediaType)

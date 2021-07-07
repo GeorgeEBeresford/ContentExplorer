@@ -100,4 +100,35 @@ function MediaRepository() {
 
         return deferred.promise();
     }
+
+    /**
+     * Retrieves information about a single file in a directory
+     * @param {string} currentDirectory -
+     * @param {number} page - A 1-based indexed page number
+     * @param {string} mediaType
+     * @param {string} filter
+     */
+    this.getSubFileAsync = function (currentDirectory, page, mediaType, filter) {
+
+        var deferred = $.Deferred();
+        var payload = {
+            currentDirectory: currentDirectory,
+            mediaType: mediaType,
+            page: page,
+            filter: filter
+        };
+
+        httpRequester.getAsync("GetSubFile", controller, payload)
+            .then(function (paginatedSubFiles) {
+
+                deferred.resolve(paginatedSubFiles);
+            })
+            .fail(function (xhr) {
+
+                alert("[" + xhr.status + "] " + xhr.statusText);
+                deferred.reject();
+            });
+
+        return deferred.promise();
+    }
 }

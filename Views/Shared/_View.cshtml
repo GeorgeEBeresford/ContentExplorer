@@ -1,28 +1,28 @@
 ﻿@{
-    string baseDirectory = ConfigurationManager.AppSettings["ImagesPath"];
     string cdn = ConfigurationManager.AppSettings["CDNPath"];
     string relativeDirectory = ViewBag.Path;
     int currentPage = ViewBag.Id;
     string filter = ViewBag.Filter;
-    FileInfo image = ViewBag.Image;
-    int maxPages = ViewBag.ImageCount;
+    FileInfo media = ViewBag.Media;
+    int maxPages = ViewBag.MediaCount;
     string directoryPath = ViewBag.Path;
 
-    ViewBag.Title = image.Directory.Name + " - " + image.Name;
+    ViewBag.Title = media.Directory.Name + " - " + media.Name;
 
-    string imagePath = Path.Combine(cdn, baseDirectory, relativeDirectory, image.Name).Replace("\\", "/");
+    string mediaPath = Path.Combine(cdn, ViewBag.BaseDirectory, relativeDirectory, media.Name).Replace("\\", "/");
     string baseSiteDirectory = ConfigurationManager.AppSettings["BaseDirectory"];
+    Layout = "./_Layout.cshtml";
 }
 
-@helper RenderSteppingStones(DirectoryInfo parentDirectory, string baseSiteDirectory, string imageDirectory, string filter)
+@helper RenderSteppingStones(DirectoryInfo parentDirectory, string baseSiteDirectory, string filter)
 {
 
 
     if (parentDirectory.Parent != null && parentDirectory.Parent.FullName != baseSiteDirectory)
     {
-        @RenderSteppingStones(parentDirectory.Parent, baseSiteDirectory, imageDirectory, filter)
+        @RenderSteppingStones(parentDirectory.Parent, baseSiteDirectory, filter)
     }
-    <a class="steppingstone_item" href="@Url.Action("Index", new { path = parentDirectory.FullName.Substring(baseSiteDirectory.Length + imageDirectory.Length + 1), filter = filter })">@(parentDirectory.Name)</a>
+    <a class="steppingstone_item" href="@Url.Action("Index", new { path = parentDirectory.FullName.Substring(baseSiteDirectory.Length + ViewBag.BaseDirectory.Length + 1), filter = filter })">@(parentDirectory.Name)</a>
 }
 
 @using System.Configuration
@@ -35,20 +35,22 @@
 <input type="hidden" value="@maxPages" data-max-pages autocomplete="off" />
 
 <nav class="steppingstone_list">
-    @RenderSteppingStones(image.Directory, baseSiteDirectory, baseDirectory, filter)
+    @RenderSteppingStones(media.Directory, baseSiteDirectory, filter)
 </nav>
+
+@RenderSection("BeforeContent", false)
 
 <div class="slideshow_stopper" data-stop-slideshow>
     X
 </div>
 
 <a class="mediaview_navbutton" data-button="previous"><</a>
-<div class="mediaview" data-image-view>
-    <a href="" target="_blank" data-image-link>
-        <img src="../Core/Images/ajax-loader.gif" style="margin-top: 10px;" data-loader="image" />
-        <img src="" class="mediaview_image" data-image style="display: none" />
+<div class="mediaview" data-media-view>
+    <a href="" target="_blank" data-media-link>
+        <img src="../Core/Images/ajax-loader.gif" style="margin-top: 10px;" data-loader="media" />
+        <img src="" class="mediaview_media" data-media style="display: none" />
     </a>
-    <div class="mediaview_name" data-image-name>@image.Name</div>
+    <div class="mediaview_name" data-media-name>@media.Name</div>
 </div>
 <a class="mediaview_navbutton-right" data-button="next">></a>
 
@@ -81,18 +83,18 @@
 
             @while (previewIndex < filePreviews.Count)
             {
-                string previewPath = Path.Combine(cdn, baseDirectory, relativeDirectory, filePreviews.ElementAt(previewIndex).Name).Replace("\\", "/");
+                string previewPath = Path.Combine(cdn, ViewBag.BaseDirectory, relativeDirectory, filePreviews.ElementAt(previewIndex).Name).Replace("\\", "/");
 
                 if (previewPage != currentPage)
                 {
-                    <a data-page-button="@previewPage" href="@Url.Action("View", new {path = relativeDirectory, page = previewPage, filter = filter})" class="button_imagelink">
-                        <div class="button_imagepreview" style="background-image: url('@previewPath'); background-size: cover"></div>
+                    <a data-page-button="@previewPage" href="@Url.Action("View", new {path = relativeDirectory, page = previewPage, filter = filter})" class="button_medialink">
+                        <div class="button_mediapreview" style="background-image: url('@previewPath'); background-size: cover"></div>
                     </a>
                 }
                 else
                 {
-                    <a class="button_imagelink-disabled" data-page-button="@previewPage">
-                        <div class="button_imagepreview" style="background-image: url('@previewPath'); background-size: cover"></div>
+                    <a class="button_medialink-disabled" data-page-button="@previewPage">
+                        <div class="button_mediapreview" style="background-image: url('@previewPath'); background-size: cover"></div>
                     </a>
                 }
 
@@ -106,17 +108,23 @@
         <div class="controls">
             <label class="controls_label controls_field">
                 Slideshow Enabled
-                <input type="checkbox" value="SlideshowEnabled" data-slideshow-enabled class="controls_input-checkbox"/>
+                <input type="checkbox" value="SlideshowEnabled" data-slideshow-enabled class="controls_input-checkbox" />
             </label>
             <label class="controls_label controls_field">
                 Delay (in seconds)
-                <input type="text" value="3" data-slideshow-delay class="controls_input"/>
+                <input type="text" value="3" data-slideshow-delay class="controls_input" />
             </label>
         </div>
     </div>
 }
+else
+{
+    <b data-current-page>@currentPage</b>
+}
+
+@RenderBody()
 
 @section scripts {
 
-    @RenderSection("scripts", false)
+    @RenderSection("scripts", required: false)
 }

@@ -168,7 +168,9 @@
     <Compile Include="Models\ViewModels\ImageViewModel.cs" />
     <Compile Include="Models\ViewModels\PaginatedViewModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\FileSystemFilteringService.cs" />
     <Compile Include="Services\FileTypeService.cs" />
+    <Compile Include="Services\IFileSystemFilteringService.cs" />
     <Compile Include="Services\IThumbnailService.cs" />
     <Compile Include="Services\VideoConversionService.cs" />
     <Compile Include="Services\NameFormatService.cs" />
@@ -177,10 +179,12 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Core\Images\ajax-loader.gif" />
+    <Content Include="Core\Scripts\Common\Factories\MediaUiFactory.js" />
     <Content Include="Core\Scripts\Index\MediaIndex.js" />
     <Content Include="Core\Scripts\Common\HttpRequester.js" />
     <Content Include="Core\Scripts\Common\Repositories\MediaRepository.js" />
     <Content Include="Core\Scripts\Common\Repositories\TagRepository.js" />
+    <Content Include="Core\Scripts\View\MediaView.js" />
     <Content Include="Core\Styles\Modules\_BootstrapTheme.scss" />
     <None Include="Core\Styles\Modules\_Bootstrap.scss" />
     <Content Include="Core\Styles\Site.css">

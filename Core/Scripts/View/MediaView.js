@@ -1,4 +1,4 @@
-function VideoView() {
+﻿function MediaView(mediaType) {
 
     this.siteBaseDirectory = $("[site-base-directory]").val();
     this.cdn = $("[data-cdn-path]").val();
@@ -8,25 +8,25 @@ function VideoView() {
 
     this.$previousButton = $("[data-button='previous']");
     this.$nextButton = $("[data-button='next']");
-    this.$mediaView = $("[data-media-view]");
-    this.$media = this.$mediaView.find("[data-media]");
-    this.$mediaName = this.$mediaView.find("[data-media-name]");
-    this.$mediaLink = this.$mediaView.find("[data-media-link]");
+    this.$MediaView = $("[data-media-view]");
+    this.$media = this.$MediaView.find("[data-media]");
+    this.$mediaName = this.$MediaView.find("[data-media-name]");
+    this.$mediaLink = this.$MediaView.find("[data-media-link]");
     this.$pageButtons = $("[data-page-button]");
     this.$currentPage = $("[data-current-page]");
     this.$slideshowDelay = $("[data-slideshow-delay]");
     this.$isSlideshowEnabled = $("[data-slideshow-enabled]");
-    this.$navbars = $(".navbar,.mediaview_navbutton,.mediaview_navbutton-right,.steppingstone_list,.button_list");
+    this.$navbars = $(".navbar,.MediaView_navbutton,.MediaView_navbutton-right,.steppingstone_list,.button_list");
     this.$mediaLoader = $("[data-loader='media']");
     this.$escapeslideShow = $("[data-stop-slideshow]");
 
     this.isSlideshowEnabled = this.$isSlideshowEnabled.is(":checked");
     this.slideshowDelay = +this.$slideshowDelay.val();
     this.mediaRepository = new MediaRepository();
-    this.mediaType = "video";
+    this.mediaType = mediaType;
 }
 
-VideoView.prototype.addEventHandlers = function () {
+MediaView.prototype.addEventHandlers = function () {
 
     var self = this;
 
@@ -58,7 +58,7 @@ VideoView.prototype.addEventHandlers = function () {
     );
 
     this.$escapeslideShow.on("click",
-        function() {
+        function () {
 
             self.$isSlideshowEnabled.click();
         }
@@ -81,7 +81,6 @@ VideoView.prototype.addEventHandlers = function () {
         }
     );
 
-
     this.$media.on("load",
         function () {
 
@@ -103,7 +102,7 @@ VideoView.prototype.addEventHandlers = function () {
     );
 }
 
-VideoView.prototype.synchroniseFocus = function () {
+MediaView.prototype.synchroniseFocus = function () {
 
     if (this.isSlideshowEnabled) {
 
@@ -115,7 +114,7 @@ VideoView.prototype.synchroniseFocus = function () {
     }
 }
 
-VideoView.prototype.slideshowThread = function () {
+MediaView.prototype.slideshowThread = function () {
 
     var self = this;
 
@@ -133,7 +132,7 @@ VideoView.prototype.slideshowThread = function () {
     );
 }
 
-VideoView.prototype.navigatePagesAsync = function (pageIncrement) {
+MediaView.prototype.navigatePagesAsync = function (pageIncrement) {
 
     var deferred = $.Deferred();
     var self = this;
@@ -146,10 +145,10 @@ VideoView.prototype.navigatePagesAsync = function (pageIncrement) {
 
     this.addPageIncrement(pageIncrement);
 
-    this.mediaRepository.getSubFileAsync(this.relativeDirectory, this.$currentPage.text(), this.mediaType, this.filter)
-        .then(function (mediaPreview) {
+    this.mediaRepository.getSubFileAsync(this.relativeDirectory, +this.$currentPage.text(), this.mediaType, this.filter)
+        .then(function (subFile) {
 
-            self.refreshMediaDisplay(mediaPreview, previousMediaInformation);
+            self.refreshMediaDisplay(subFile, previousMediaInformation);
             deferred.resolve();
         })
         .fail(function () {
@@ -160,7 +159,7 @@ VideoView.prototype.navigatePagesAsync = function (pageIncrement) {
     return deferred.promise();
 }
 
-VideoView.prototype.addPageIncrement = function (pageIncrement) {
+MediaView.prototype.addPageIncrement = function (pageIncrement) {
 
     var currentPage = +this.$currentPage.text();
     var incrementedPage = currentPage + pageIncrement;
@@ -177,11 +176,11 @@ VideoView.prototype.addPageIncrement = function (pageIncrement) {
     this.$currentPage.text(incrementedPage);
 }
 
-VideoView.prototype.refreshMediaDisplay = function (mediaViewModel, previousMediaInformation) {
+MediaView.prototype.refreshMediaDisplay = function (subFilePreview, previousMediaInformation) {
 
-    this.$media.attr("src", mediaViewModel.ContentPath);
-    this.$mediaName.text(mediaViewModel.Name);
-    this.$mediaLink.attr("href", mediaViewModel.ContentPath);
+    this.$media.attr("src", subFilePreview.ContentUrl).attr("alt", subFilePreview.Name);
+    this.$mediaName.text(subFilePreview.Name);
+    this.$mediaLink.attr("href", subFilePreview.Content);
 
     // Make current page navigatable
     this.$pageButtons.filter(".button_medialink-disabled")
@@ -195,7 +194,7 @@ VideoView.prototype.refreshMediaDisplay = function (mediaViewModel, previousMedi
         .removeAttr("href");
 }
 
-VideoView.prototype.setFocusedMediaDimensions = function () {
+MediaView.prototype.setFocusedMediaDimensions = function () {
 
     var originalWidth = this.$media.outerWidth();
     var originalHeight = this.$media.outerHeight();
@@ -229,46 +228,33 @@ VideoView.prototype.setFocusedMediaDimensions = function () {
     this.$media.css("left", mediaAndWindowDifference / 2 + "px");
 }
 
-VideoView.prototype.unsetFocusedMediaDimensions = function () {
+MediaView.prototype.unsetFocusedMediaDimensions = function () {
 
     this.$media.css("width", "");
     this.$media.css("height", "");
     this.$media.css("left", "");
 }
 
-VideoView.prototype.defocusMedia = function () {
+MediaView.prototype.defocusMedia = function () {
 
-    if (!this.$media.is(".mediaview_media")) {
+    if (!this.$media.is(".MediaView_media")) {
 
         this.$media
-            .removeClass("mediaview_media-focused")
-            .addClass("mediaview_media");
+            .removeClass("MediaView_media-focused")
+            .addClass("MediaView_media");
 
         this.$navbars.show();
     }
 }
 
-VideoView.prototype.focusMedia = function () {
+MediaView.prototype.focusMedia = function () {
 
-    if (!this.$media.is(".mediaview_media-focused")) {
+    if (!this.$media.is(".MediaView_media-focused")) {
 
         this.$media
-            .removeClass("mediaview_media")
-            .addClass("mediaview_media-focused");
+            .removeClass("MediaView_media")
+            .addClass("MediaView_media-focused");
 
         this.$navbars.hide();
     }
 }
-
-$(function () {
-
-    var mediaView = new VideoView();
-
-    // Load the media for the current page
-    mediaView.navigatePagesAsync(0);
-
-    // Initialise the rest of the page
-    mediaView.slideshowThread();
-    mediaView.addEventHandlers();
-    mediaView.synchroniseFocus();
-})

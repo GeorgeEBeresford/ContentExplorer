@@ -75,8 +75,8 @@ namespace ContentExplorer.Controllers
             int fileCount = validFiles.Count();
             FileInfo firstFile = validFiles.ElementAt(page - 1);
 
-            ViewBag.Video = firstFile;
-            ViewBag.VideoCount = fileCount;
+            ViewBag.Media = firstFile;
+            ViewBag.MediaCount = fileCount;
             ViewBag.Path = path;
             ViewBag.Id = page;
             ViewBag.Filter = filter;

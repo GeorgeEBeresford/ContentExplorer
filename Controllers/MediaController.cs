@@ -4,7 +4,6 @@ using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Web;
 using System.Web.Mvc;
 using ContentExplorer.Models;
 using ContentExplorer.Models.ViewModels;
@@ -17,19 +16,14 @@ namespace ContentExplorer.Controllers
         [HttpGet]
         public JsonResult GetDirectoryHierarchy(string currentDirectory, string mediaType)
         {
-            string hierarchyRoot = GetHierarchyRoot(mediaType);
-            string websiteDiskLocation = ConfigurationManager.AppSettings["BaseDirectory"];
-            string hierarchyRootDiskLocation = Path.Combine(websiteDiskLocation, hierarchyRoot);
-
-            string currentDirectoryPath = Path.Combine(hierarchyRootDiskLocation, currentDirectory);
-            DirectoryInfo currentDirectoryInfo = new DirectoryInfo(currentDirectoryPath);
+            DirectoryInfo currentDirectoryInfo = GetCurrentDirectory(currentDirectory, mediaType);
 
             if (!currentDirectoryInfo.Exists)
             {
                 throw new InvalidOperationException("Current directory could not be found");
             }
 
-            DirectoryInfo hierarchyRootInfo = new DirectoryInfo(hierarchyRootDiskLocation);
+            DirectoryInfo hierarchyRootInfo = GetHierarchicalRootInfo(mediaType);
             DirectoryHierarchyViewModel directoryHierarchy =
                 GetDirectoryAsHierarchy(currentDirectoryInfo, hierarchyRootInfo);
 
@@ -54,18 +48,8 @@ namespace ContentExplorer.Controllers
             DirectoryInfo hierarchyRootInfo = new DirectoryInfo(hierarchyRootDiskLocation);
             DirectoryInfo[] subDirectoryInfos = currentDirectoryInfo.GetDirectories();
             ICollection<MediaPreviewViewModel> directoryPreviews = subDirectoryInfos
-                .Where(subDirectoryInfo =>
-                    subDirectoryInfo.EnumerateFiles("*.*", SearchOption.AllDirectories)
-                    .Any(subFile => FileMatchesFilter(subFile, filter, mediaType))
-                )
-                .Select(subDirectoryInfo => new MediaPreviewViewModel
-                {
-                    Name = subDirectoryInfo.Name,
-                    Path = GetUrl(subDirectoryInfo).Substring(hierarchyRootInfo.Name.Length).TrimStart('/'),
-                    ContentUrl = GetUrl(subDirectoryInfo),
-                    ThumbnailUrl = GetUrl(subDirectoryInfo.EnumerateFiles("*.*", SearchOption.AllDirectories).First()),
-                    TaggingUrl = GetUrl(subDirectoryInfo).Substring(hierarchyRootInfo.Name.Length).TrimStart('/')
-                })
+                .Where(subDirectoryInfo => GetMatchingSubFiles(subDirectoryInfo, mediaType, filter, true).Any())
+                .Select(subDirectoryInfo => GetMediaPreviewFromSubDirectory(subDirectoryInfo, hierarchyRootInfo, mediaType, filter))
                 .ToList();
 
             return Json(directoryPreviews, JsonRequestBehavior.AllowGet);
@@ -86,41 +70,12 @@ namespace ContentExplorer.Controllers
                 throw new InvalidOperationException("Current directory could not be found");
             }
 
-            FileTypeService fileTypeService = new FileTypeService();
             DirectoryInfo hierarchyRootInfo = new DirectoryInfo(hierarchyRootDiskLocation);
-            IEnumerable<FileInfo> subFiles = currentDirectoryInfo.EnumerateFiles();
-
-            if (mediaType == "image")
-            {
-                subFiles = subFiles.Where(fileInfo => fileTypeService.IsFileImage(fileInfo.Name));
-            }
-            else
-            {
-                subFiles = subFiles.Where(fileInfo => fileTypeService.IsFileVideo(fileInfo.Name));
-            }
-
-            subFiles = subFiles.Where(fileInfo => FileMatchesFilter(fileInfo, filter, mediaType)).ToList();
-
-            ICollection<MediaPreviewViewModel> filePreviews = subFiles
-                .OrderBy(subFile => subFile.Name)
-                .ThenBy(file =>
-                {
-                    Match numbersInName = Regex.Match(file.Name, "[0-9]+");
-
-                    bool isNumber = int.TryParse(numbersInName.Value, out int numericalMatch);
-
-                    return isNumber ? numericalMatch : 0;
-                })
+            IEnumerable<FileInfo> subFiles = GetMatchingSubFiles(currentDirectoryInfo, mediaType, filter, false);
+            ICollection<MediaPreviewViewModel> filePreviews = OrderAlphabetically(subFiles)
                 .Skip(50 * (page - 1))
                 .Take(50)
-                .Select(subFile => new MediaPreviewViewModel
-                {
-                    Name = subFile.Name,
-                    Path = GetUrl(subFile.Directory).Substring(hierarchyRootInfo.Name.Length).TrimStart('/'),
-                    ContentUrl = GetUrl(subFile),
-                    ThumbnailUrl = GetUrl(subFile),
-                    TaggingUrl = GetUrl(subFile).Substring(hierarchyRootInfo.Name.Length).TrimStart('/'),
-                })
+                .Select(subFile => GetMediaPreviewFromSubFile(subFile, hierarchyRootInfo))
                 .ToArray();
 
             PaginatedViewModel<MediaPreviewViewModel> paginatedViewModel = new PaginatedViewModel<MediaPreviewViewModel>
@@ -132,49 +87,107 @@ namespace ContentExplorer.Controllers
             return Json(paginatedViewModel, JsonRequestBehavior.AllowGet);
         }
 
-        private bool FileMatchesFilter(FileInfo fileInfo, string filterString, string mediaType)
+        [HttpGet]
+        public JsonResult GetSubFile(string currentDirectory, int page, string mediaType, string filter)
         {
-            if (string.IsNullOrEmpty(filterString))
+            DirectoryInfo currentDirectoryInfo = GetCurrentDirectory(currentDirectory, mediaType);
+            IEnumerable<FileInfo> fileInfos = GetMatchingSubFiles(currentDirectoryInfo, mediaType, filter, false);
+            FileInfo image = OrderAlphabetically(fileInfos).ElementAt(page - 1);
+
+            DirectoryInfo hierarchicalRootInfo = GetHierarchicalRootInfo(mediaType);
+            MediaPreviewViewModel imageViewModel = GetMediaPreviewFromSubFile(image, hierarchicalRootInfo);
+
+            return Json(imageViewModel, JsonRequestBehavior.AllowGet);
+        }
+
+        private MediaPreviewViewModel GetMediaPreviewFromSubDirectory(DirectoryInfo subDirectory, DirectoryInfo hierarchicalDirectoryInfo, string mediaType, string filter)
+        {
+            IEnumerable<FileInfo> matchingSubFiles = GetMatchingSubFiles(subDirectory, mediaType, filter, true);
+            IEnumerable<FileInfo> orderedSubFiles = OrderAlphabetically(matchingSubFiles);
+            FileInfo firstMatchingImage = orderedSubFiles.First();
+
+            MediaPreviewViewModel mediaPreview = new MediaPreviewViewModel
             {
-                return true;
+                Name = subDirectory.Name,
+                Path = GetUrl(subDirectory).Substring(hierarchicalDirectoryInfo.Name.Length).TrimStart('/'),
+                ContentUrl = GetUrl(subDirectory),
+                ThumbnailUrl = GetUrl(firstMatchingImage),
+                TaggingUrl = GetUrl(subDirectory).Substring(hierarchicalDirectoryInfo.Name.Length).TrimStart('/')
+            };
+
+            return mediaPreview;
+        }
+
+        private MediaPreviewViewModel GetMediaPreviewFromSubFile(FileInfo subFile, DirectoryInfo hierarchicalDirectoryInfo)
+        {
+            MediaPreviewViewModel mediaPreview = new MediaPreviewViewModel
+            {
+                Name = subFile.Name,
+                Path = GetUrl(subFile.Directory).Substring(hierarchicalDirectoryInfo.Name.Length).TrimStart('/'),
+                ContentUrl = $"{ConfigurationManager.AppSettings["CDNPath"]}/{GetUrl(subFile)}",
+                ThumbnailUrl = GetUrl(subFile),
+                TaggingUrl = GetUrl(subFile).Substring(hierarchicalDirectoryInfo.Name.Length).TrimStart('/'),
+            };
+
+            return mediaPreview;
+        }
+
+        private IEnumerable<TFilesystemInfo> OrderAlphabetically<TFilesystemInfo>(IEnumerable<TFilesystemInfo> unorderedEnumerable) where TFilesystemInfo : FileSystemInfo
+        {
+            IEnumerable<TFilesystemInfo> orderedEnumerable = unorderedEnumerable
+                .OrderBy(subFile => subFile.FullName)
+                .ThenBy(file =>
+                {
+                    Match numbersInName = Regex.Match(file.Name, "[0-9]+");
+
+                    bool isNumber = int.TryParse(numbersInName.Value, out int numericalMatch);
+
+                    return isNumber ? numericalMatch : 0;
+                });
+
+            return orderedEnumerable;
+        }
+
+        private IEnumerable<FileInfo> GetMatchingSubFiles(DirectoryInfo currentDirectoryInfo, string mediaType, string filter, bool includeSubDirectories)
+        {
+            FileTypeService fileTypeService = new FileTypeService();
+            IEnumerable<FileInfo> subFiles = includeSubDirectories ?
+                currentDirectoryInfo.EnumerateFiles("*.*", SearchOption.AllDirectories) :
+                currentDirectoryInfo.EnumerateFiles("*.*", SearchOption.TopDirectoryOnly);
+
+            if (mediaType == "image")
+            {
+                subFiles = subFiles.Where(fileInfo => fileTypeService.IsFileImage(fileInfo.Name));
+            }
+            else
+            {
+                subFiles = subFiles.Where(fileInfo => fileTypeService.IsFileVideo(fileInfo.Name));
             }
 
+            IFileSystemFilteringService fileSytemFilteringService = new FileSystemFilteringService();
+            subFiles = subFiles.Where(fileInfo => fileSytemFilteringService.FileMatchesFilter(fileInfo, filter)).ToList();
+
+            return subFiles;
+        }
+
+
+        private DirectoryInfo GetCurrentDirectory(string relativePath, string mediaType)
+        {
+            DirectoryInfo hierarchicalRootInfo = GetHierarchicalRootInfo(mediaType);
+            string currentDirectoryPath = Path.Combine(hierarchicalRootInfo.FullName, relativePath);
+            DirectoryInfo currentDirectoryInfo = new DirectoryInfo(currentDirectoryPath);
+
+            return currentDirectoryInfo;
+        }
+
+        private DirectoryInfo GetHierarchicalRootInfo(string mediaType)
+        {
+            string hierarchyRoot = GetHierarchyRoot(mediaType);
             string websiteDiskLocation = ConfigurationManager.AppSettings["BaseDirectory"];
-            string filePath = fileInfo.FullName.Substring(websiteDiskLocation.Length + 1);
+            string hierarchyRootDiskLocation = Path.Combine(websiteDiskLocation, hierarchyRoot);
+            DirectoryInfo hierarchicalRootInfo = new DirectoryInfo(hierarchyRootDiskLocation);
 
-            string[] filters = filterString.ToLowerInvariant().Split(',');
-            bool isMatch = true;
-
-            // Make sure the file matches all of our filters
-            for (int filterIndex = 0; filterIndex < filters.Length && isMatch; filterIndex++)
-            {
-                string filter = filters[filterIndex];
-
-                if (filter == "")
-                {
-                    isMatch = true;
-                }
-                else if (filter.StartsWith("type:"))
-                {
-                    // Remove the special tag from the filter
-                    string filterType = filter.Substring("type:".Length).Trim();
-
-                    isMatch = fileInfo.Extension.Split('.').Last().Equals(filterType, StringComparison.OrdinalIgnoreCase);
-                }
-                else if (filter.StartsWith("name:"))
-                {
-                    // Remove the special tag from the filter
-                    string filterName = filter.Substring("name:".Length).Trim();
-
-                    isMatch = fileInfo.Name.ToLowerInvariant().Contains(filterName.ToLowerInvariant());
-                }
-                else
-                {
-                    isMatch = Tag.GetByFile(filePath).Any(tag => tag.TagName.Equals(filter, StringComparison.OrdinalIgnoreCase));
-                }
-            }
-
-            return isMatch;
+            return hierarchicalRootInfo;
         }
 
         private DirectoryHierarchyViewModel GetDirectoryAsHierarchy(DirectoryInfo directoryInfo,

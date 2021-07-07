@@ -7111,7 +7111,7 @@ fieldset[disabled] .btn-danger.active {
   box-sizing: border-box;
   margin-right: 4px; }
 
-.button_imagelink, .button_imagelink-disabled, .button_videolink-disabled, .button_videolink {
+.button_medialink, .button_medialink-disabled {
   display: inline-block;
   border-radius: 4px;
   margin-right: 8px;
@@ -7119,10 +7119,10 @@ fieldset[disabled] .btn-danger.active {
   border: 1px solid #ababab;
   width: 150px;
   height: 150px; }
-  .button_imagelink-disabled, .button_videolink-disabled {
+  .button_medialink-disabled {
     opacity: 0.6; }
 
-.button_imagepreview, .button_videopreview {
+.button_mediapreview {
   display: block;
   width: 100%;
   height: 100%; }

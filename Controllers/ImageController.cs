@@ -52,34 +52,6 @@ namespace ContentExplorer.Controllers
         }
 
         [HttpGet]
-        public JsonResult GetImagePath(string directoryPath, int page, string filter = "")
-        {
-            if (filter == null)
-            {
-                filter = "";
-            }
-
-            string baseDirectory = ConfigurationManager.AppSettings["ImagesPath"];
-            string cdn = ConfigurationManager.AppSettings["CDNPath"];
-
-            DirectoryInfo directoryInfo = GetCurrentDirectory(directoryPath);
-            FileInfo image = GetOrderedFiles(directoryInfo, filter).ElementAt(page - 1);
-
-            string imageWebPath = Path.Combine(cdn, baseDirectory, directoryPath, image.Name)
-                .Replace("'", "%27")
-                .Replace("\\", "/")
-                .Replace("#", "%23");
-
-            ImageViewModel imageViewModel = new ImageViewModel
-            {
-                ImageName = image.Name,
-                ImagePath = imageWebPath
-            };
-
-            return Json(imageViewModel, JsonRequestBehavior.AllowGet);
-        }
-
-        [HttpGet]
         public ViewResult View(string path, int page, string filter = "")
         {
             if (page < 1)
@@ -104,8 +76,8 @@ namespace ContentExplorer.Controllers
             int fileCount = validFiles.Count();
             FileInfo firstFile = validFiles.ElementAt(page - 1);
 
-            ViewBag.Image = firstFile;
-            ViewBag.ImageCount = fileCount;
+            ViewBag.Media = firstFile;
+            ViewBag.MediaCount = fileCount;
             ViewBag.Path = path;
             ViewBag.Id = page;
             ViewBag.Filter = filter;

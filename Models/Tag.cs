@@ -41,6 +41,77 @@ namespace ContentExplorer.Models
             return tags;
         }
 
+        public static ICollection<Tag> GetByDirectory(string directoryPath)
+        {
+            // The caller shouldn't have to care about which slash or case to use
+            directoryPath = directoryPath.Replace("/", "\\").ToLowerInvariant();
+
+            // We need to distinguish between files and directories with the same name but the caller shouldn't have to worry about it
+            directoryPath = directoryPath.TrimEnd("\\".ToCharArray());
+
+            string query = @"SELECT Tags.TagId, Tags.TagName, TagLinks.FilePath, TagLinks.TagLinkId
+                                FROM Tags
+                                INNER JOIN TagLinks ON Tags.TagId = TagLinks.TagId
+                                WHERE LOWER(REPLACE(TagLinks.FilePath, '/', '\')) LIKE @FilePath
+                                GROUP BY Tags.TagId, Tags.TagName";
+
+            ICollection<IDictionary<string, object>> dataRows;
+            using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
+            {
+                dataRows = dbContext.GetDataRows(query, SqliteWrapper.GenerateParameter("@FilePath", $"{directoryPath}\\%"));
+            }
+
+            ICollection<Tag> tags = dataRows.Select(dataRow =>
+                    new Tag(dataRow)
+                )
+                .ToList();
+
+            return tags;
+        }
+
+        public static Tag GetById (int tagId)
+        {
+            string query = @"SELECT TagId, TagName
+                                FROM Tags
+                                WHERE TagId = @TagId";
+
+            IDictionary<string, object> dataRow;
+            using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
+            {
+                dataRow = dbContext.GetDataRow(query, SqliteWrapper.GenerateParameter("@TagId", tagId));
+            }
+
+            return new Tag(dataRow);
+        }
+
+        public static ICollection<Tag> GetByFile(string filePath)
+        {
+            // The caller shouldn't have to care about which slash to use
+            filePath = filePath.Replace("/", "\\");
+
+            // We need to distinguish between files and directories with the same name but the caller shouldn't have to worry about it
+            filePath = filePath.ToLowerInvariant().TrimEnd("/\\".ToCharArray());
+
+            string query = @"SELECT Tags.TagId, Tags.TagName
+                                FROM Tags
+                                INNER JOIN TagLinks ON Tags.TagId = TagLinks.TagId
+                                WHERE LOWER(REPLACE(TagLinks.FilePath, '/', '\')) = @FilePath
+                                GROUP BY Tags.TagId, Tags.TagName";
+
+            ICollection<IDictionary<string, object>> dataRows;
+            using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
+            {
+                dataRows = dbContext.GetDataRows(query, SqliteWrapper.GenerateParameter("@FilePath", filePath));
+            }
+
+            ICollection<Tag> tags = dataRows.Select(dataRow =>
+                    new Tag(dataRow)
+                )
+                .ToList();
+
+            return tags;
+        }
+
         public static Tag GetByTagName(string tagName)
         {
             string query = @"SELECT TagId, TagName
@@ -76,62 +147,6 @@ namespace ContentExplorer.Models
             }
 
             return isSuccess;
-        }
-
-        public static ICollection<Tag> GetByDirectory(string directoryPath)
-        {
-            // The caller shouldn't have to care about which slash or case to use
-            directoryPath = directoryPath.Replace("/", "\\").ToLowerInvariant();
-
-            // We need to distinguish between files and directories with the same name but the caller shouldn't have to worry about it
-            directoryPath = directoryPath.TrimEnd("\\".ToCharArray());
-
-            string query = @"SELECT Tags.TagId, Tags.TagName
-                                FROM Tags
-                                INNER JOIN TagLinks ON Tags.TagId = TagLinks.TagId
-                                WHERE LOWER(REPLACE(TagLinks.FilePath, '/', '\')) LIKE @FilePath
-                                GROUP BY Tags.TagId, Tags.TagName";
-
-            ICollection<IDictionary<string, object>> dataRows;
-            using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
-            {
-                dataRows = dbContext.GetDataRows(query, SqliteWrapper.GenerateParameter("@FilePath", $"{directoryPath}\\%"));
-            }
-
-            ICollection<Tag> tags = dataRows.Select(dataRow =>
-                    new Tag(dataRow)
-                )
-                .ToList();
-
-            return tags;
-        }
-
-        public static ICollection<Tag> GetByFile(string filePath)
-        {
-            // The caller shouldn't have to care about which slash to use
-            filePath = filePath.Replace("/", "\\");
-
-            // We need to distinguish between files and directories with the same name but the caller shouldn't have to worry about it
-            filePath = filePath.ToLowerInvariant().TrimEnd("/\\".ToCharArray());
-
-            string query = @"SELECT Tags.TagId, Tags.TagName
-                                FROM Tags
-                                INNER JOIN TagLinks ON Tags.TagId = TagLinks.TagId
-                                WHERE LOWER(REPLACE(TagLinks.FilePath, '/', '\')) = @FilePath
-                                GROUP BY Tags.TagId, Tags.TagName";
-
-            ICollection<IDictionary<string, object>> dataRows;
-            using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
-            {
-                dataRows = dbContext.GetDataRows(query, SqliteWrapper.GenerateParameter("@FilePath", filePath));
-            }
-
-            ICollection<Tag> tags = dataRows.Select(dataRow =>
-                    new Tag(dataRow)
-                )
-                .ToList();
-
-            return tags;
         }
 
         public bool Create()

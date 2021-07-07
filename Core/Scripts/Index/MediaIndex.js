@@ -53,6 +53,8 @@ function MediaIndex(mediaType, controller) {
 
     this.mediaRepository = new MediaRepository();
 
+    this.mediaUiFactory = new MediaUiFactory();
+
     this.tagRepository = new TagRepository();
 }
 
@@ -203,7 +205,7 @@ MediaIndex.prototype.renderSubDirectory = function (subDirectoryInfo) {
         .removeAttr("data-template");
 
     $directoryPreview.find("a").attr("href", window.location.origin + window.location.pathname + "?path=" + subDirectoryInfo.Path + "&filter=" + this.filter);
-    $directoryPreview.find("[data-directory-name]").text(subDirectoryInfo.TaggingUrl);
+    $directoryPreview.find("[data-directory-name]").text(subDirectoryInfo.Name);
     $directoryPreview.find("[data-tag-selector]").attr("data-path", subDirectoryInfo.Path);
     $directoryPreview.css("background-image", "url(\"" + this.cdnPath + "/" + subDirectoryInfo.ThumbnailUrl + "\")");
 
@@ -218,14 +220,8 @@ MediaIndex.prototype.renderSteppingStonesAsync = function () {
     this.mediaRepository.getDirectoryHierarchyAsync(this.directoryPath, this.mediaType)
         .then(function (directoryHierarchy) {
 
-            while (directoryHierarchy !== null) {
-
-                var $steppingStone = self.generateSteppingStone(directoryHierarchy.Name, directoryHierarchy.Path);
-                self.$steppingStones.prepend($steppingStone);
-
-                directoryHierarchy = directoryHierarchy.Parent;
-            }
-
+            var $steppingStones = self.mediaUiFactory.generateSteppingStones(directoryHierarchy, self.filter);
+            self.$steppingStones.html($steppingStones);
             deferred.resolve();
         })
         .fail(function () {
@@ -234,16 +230,6 @@ MediaIndex.prototype.renderSteppingStonesAsync = function () {
         });
 
     return deferred.promise();
-}
-
-MediaIndex.prototype.generateSteppingStone = function (text, path) {
-
-    var $steppingstone = $("<a>")
-        .text(text)
-        .attr("href", window.location.origin + window.location.pathname + "?path=" + path + "&filter=" + this.filter)
-        .addClass("steppingstone_item");
-
-    return $steppingstone;
 }
 
 /**
@@ -498,7 +484,7 @@ MediaIndex.prototype.renderTagListAsync = function () {
     var deferred = $.Deferred();
     var self = this;
 
-    this.tagRepository.getTagsAsync(this.directoryPath, this.mediaType)
+    this.tagRepository.getTagsAsync(this.directoryPath, this.mediaType, this.filter)
         .then(function (tag) {
 
             tag.forEach(function (tag) {
