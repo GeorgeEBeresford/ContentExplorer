@@ -39,8 +39,9 @@ namespace ContentExplorer.Controllers
             directoryPaths = directoryPaths.Where(filePath => filePath != "").ToArray();
             tags = tags.Where(tag => tag != "").Select(tag => tag.Trim()).ToArray();
 
-            string rootDirectory = GetRootDirectory(mediaType);
-            directoryPaths = directoryPaths.Select(directoryPath => rootDirectory + "\\" + directoryPath).ToArray();
+            string cdnDiskLocation = ConfigurationManager.AppSettings["BaseDirectory"];
+            string rootDirectory = Path.Combine(cdnDiskLocation, GetRootDirectory(mediaType));
+            directoryPaths = directoryPaths.Select(directoryPath => Path.Combine(rootDirectory, directoryPath)).ToArray();
 
             bool isSuccess = true;
             foreach (string directoryPath in directoryPaths)
@@ -51,7 +52,7 @@ namespace ContentExplorer.Controllers
                     FileInfo[] subFiles = directory.GetFiles("*.*", SearchOption.AllDirectories);
                     foreach (FileInfo subFile in subFiles)
                     {
-                        isSuccess &= AddTags(subFile.FullName, tags);
+                        isSuccess &= AddTags(subFile.FullName.Substring(cdnDiskLocation.Length + 1), tags);
                     }
                 }
             }
@@ -81,19 +82,16 @@ namespace ContentExplorer.Controllers
         {
             directoryName = GetRootDirectory(mediaType) + "\\" + directoryName;
 
+            string[] filters = filter.Split(",".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
             IFileSystemFilteringService fileSystemFilteringService = new FileSystemFilteringService();
-
-            string baseDirectory = ConfigurationManager.AppSettings["BaseDirectory"];
-
             ICollection<TagLink> tagLinks = TagLink.GetByDirectory(directoryName);
 
-            var tagLinksGroupedByFile = tagLinks.GroupBy(tagLink => tagLink.FilePath).ToList();
+            var tagLinksGroupedByFile = tagLinks.GroupBy(tagLink => tagLink.FilePath);
 
             var filteredTagLinks = tagLinksGroupedByFile
                 .Where(tagsLinksForFile =>
-                    fileSystemFilteringService.FileMatchesFilter(tagsLinksForFile, filter)
-                )
-                .ToList();
+                    fileSystemFilteringService.TagLinkMatchesFilter(tagsLinksForFile, filters)
+                ).ToList();
 
             IEnumerable<Tag> tagsForDirectory = filteredTagLinks
                 .SelectMany(tagLinksForFile =>

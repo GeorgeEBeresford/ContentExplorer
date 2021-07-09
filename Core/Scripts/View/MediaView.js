@@ -181,7 +181,7 @@ MediaView.prototype.renderPageButtonsAsync = function () {
     var fileNumber = +this.$currentPage.text();
     var pageFromFileNumber = Math.ceil(fileNumber / 15);
 
-    this.mediaRepository.getSubFilesAsync(this.relativeDirectory, this.mediaType, pageFromFileNumber, this.filter, 15)
+    this.mediaRepository.getSubFilesAsync(this.relativeDirectory, this.mediaType, this.filter, ((pageFromFileNumber - 1) * 15), 15)
         .then(function (mediaPreviews) {
 
             self.$pageButtons.find("[data-page-button-list]").html("");

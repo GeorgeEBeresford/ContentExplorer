@@ -45,20 +45,20 @@ function MediaRepository() {
      * Retrieves the files directly inside any directory for the specified mediaType
      * @param {string} currentDirectory
      * @param {string} mediaType
-     * @param {number} page - A 1-based indexed page number
      * @param {string} filter - A comma delimited list of filters
-     * @param {number} itemsPerPage - How many items should be returned per page of sub files
+     * @param {number} skip - How many items to skip before we take a number of them
+     * @param {number} take - The maximum number of items to return
      * @returns {JQuery.Promise<any>}
      */
-    this.getSubFilesAsync = function (currentDirectory, mediaType, page, filter, itemsPerPage) {
+    this.getSubFilesAsync = function (currentDirectory, mediaType, filter, skip, take) {
 
         var deferred = $.Deferred();
         var payload = {
             currentDirectory: currentDirectory,
             mediaType: mediaType,
-            page: page,
             filter: filter,
-            itemsPerPage: itemsPerPage
+            skip: skip,
+            take: take
         };
 
         httpRequester.getAsync("GetSubFiles", controller, payload)

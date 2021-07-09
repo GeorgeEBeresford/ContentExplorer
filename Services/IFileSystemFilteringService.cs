@@ -6,7 +6,8 @@ namespace ContentExplorer.Services
 {
     public interface IFileSystemFilteringService
     {
-        bool FileMatchesFilter(IEnumerable<TagLink> tagLinksforFile, string filterString);
-        bool FileMatchesFilter(FileInfo fileInfo, string filterString);
+        bool TagLinkMatchesFilter(IEnumerable<TagLink> tagLinksforFile, string[] filters);
+        bool FileMatchesFilter(FileInfo fileInfo, string[] filters);
+        bool DirectoryMatchesFilter(DirectoryInfo directoryInfo, string[] filters, string mediaType);
     }
 }

@@ -100,7 +100,7 @@ MediaIndex.prototype.renderSubFilesAsync = function () {
     var deferred = $.Deferred();
     var self = this;
 
-    this.mediaRepository.getSubFilesAsync(this.directoryPath, this.mediaType, this.page, this.filter, 50)
+    this.mediaRepository.getSubFilesAsync(this.directoryPath, this.mediaType, this.filter, (this.page - 1) * 50, 50)
         .then(function (paginatedSubFiles) {
 
             self.totalFiles = paginatedSubFiles.Total;
@@ -206,7 +206,7 @@ MediaIndex.prototype.renderSubDirectory = function (subDirectoryInfo) {
 
     $directoryPreview.find("a").attr("href", window.location.origin + window.location.pathname + "?path=" + subDirectoryInfo.Path + "&filter=" + this.filter);
     $directoryPreview.find("[data-directory-name]").text(subDirectoryInfo.Name);
-    $directoryPreview.find("[data-tag-selector]").attr("data-path", subDirectoryInfo.Path);
+    $directoryPreview.find("[data-tag-selector]").attr("data-path", subDirectoryInfo.TaggingUrl);
     $directoryPreview.css("background-image", "url(\"" + this.cdnPath + "/" + subDirectoryInfo.ThumbnailUrl + "\")");
 
     this.$directoryList.append($directoryPreview);
