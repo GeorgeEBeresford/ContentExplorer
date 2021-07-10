@@ -148,7 +148,7 @@ MediaView.prototype.renderSteppingStonesAsync = function () {
     this.mediaRepository.getDirectoryHierarchyAsync(this.relativeDirectory, this.mediaType)
         .then(function (directoryHierarchy) {
 
-            var $steppingStones = self.mediaUiFactory.generateSteppingStones(directoryHierarchy, self.filter);
+            var $steppingStones = self.mediaUiFactory.generateSteppingStones(self.controller, directoryHierarchy, self.filter);
             self.$steppingStones.html($steppingStones);
 
             deferred.resolve();

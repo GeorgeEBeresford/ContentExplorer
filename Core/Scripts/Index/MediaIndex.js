@@ -220,7 +220,7 @@ MediaIndex.prototype.renderSteppingStonesAsync = function () {
     this.mediaRepository.getDirectoryHierarchyAsync(this.directoryPath, this.mediaType)
         .then(function (directoryHierarchy) {
 
-            var $steppingStones = self.mediaUiFactory.generateSteppingStones(directoryHierarchy, self.filter);
+            var $steppingStones = self.mediaUiFactory.generateSteppingStones(self.controller, directoryHierarchy, self.filter);
             self.$steppingStones.html($steppingStones);
             deferred.resolve();
         })
@@ -504,7 +504,13 @@ MediaIndex.prototype.renderTagListAsync = function () {
 MediaIndex.prototype.addTagToList = function (tagName) {
 
     var self = this;
-    var $tagLink = $("<li>").addClass("tagList_item").text(tagName);
+    var $tagLink = $("[data-tag='" + tagName + "']");
+
+    if ($tagLink.length !== 0) {
+        return;
+    }
+
+    $tagLink = $("<li>").attr("data-tag", tagName).addClass("tagList_item").text(tagName);
 
     $tagLink.on("click", function () {
 
@@ -519,7 +525,7 @@ MediaIndex.prototype.addTagToList = function (tagName) {
             filterValue = $tagLink.text();
         }
 
-        self.$customFilter.val(filterValue)
+        self.$customFilter.val(filterValue);
         self.applyFilter();
     });
 
@@ -529,35 +535,5 @@ MediaIndex.prototype.addTagToList = function (tagName) {
 MediaIndex.prototype.applyFilter = function () {
 
     var filterString = this.$customFilter.val();
-    var queryString = window.location.search;
-
-    // If there are no queries currently set, add one with our filter
-    if (queryString == null || queryString.length === 0) {
-
-        window.location.search = "?filter=" + filterString;
-    }
-
-    var queryParameters = queryString.toLowerCase().substring(1).split("&");
-    var isFound = false;
-
-    for (var parameterIndex = 0; parameterIndex < queryParameters.length && isFound === false; parameterIndex++) {
-
-        // If the current query is the filter, it's the right one
-        if (queryParameters[parameterIndex].indexOf("filter=") === 0) {
-
-            isFound = true;
-
-            // Replace the filter with our own filter
-            queryParameters[parameterIndex] = "filter=" + filterString;
-        }
-    }
-
-    if (isFound) {
-
-        window.location.search = "?" + queryParameters.join("&");
-    }
-    else {
-
-        window.location.search += "&filter=" + filterString;
-    }
+    window.location.search = "?filter=" + filterString + "&page=1&path=" + this.directoryPath;
 }

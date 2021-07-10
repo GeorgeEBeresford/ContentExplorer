@@ -48,7 +48,7 @@ namespace ContentExplorer.Controllers
             string[] filters = filter.Split(",".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
             DirectoryInfo hierarchyRootInfo = new DirectoryInfo(hierarchyRootDiskLocation);
             IEnumerable<DirectoryInfo> subDirectoryInfos =
-                currentDirectoryInfo.EnumerateDirectories("*", SearchOption.TopDirectoryOnly);
+                currentDirectoryInfo.EnumerateDirectories();
 
             IEnumerable<DirectoryInfo> matchingDirectories = subDirectoryInfos
                 .Where(subDirectoryInfo =>
@@ -59,6 +59,7 @@ namespace ContentExplorer.Controllers
                 .Select(subDirectoryInfo =>
                     GetMediaPreviewFromSubDirectory(subDirectoryInfo, hierarchyRootInfo)
                 )
+                .Where(mediaPreview => mediaPreview != null)
                 .ToList();
 
             return Json(directoryPreviews, JsonRequestBehavior.AllowGet);
@@ -117,7 +118,12 @@ namespace ContentExplorer.Controllers
         {
             IEnumerable<FileInfo> matchingSubFiles = subDirectory.EnumerateFiles("*.*", SearchOption.AllDirectories);
             IEnumerable<FileInfo> orderedSubFiles = OrderAlphabetically(matchingSubFiles);
-            FileInfo firstMatchingImage = orderedSubFiles.First();
+            FileInfo firstMatchingImage = orderedSubFiles.FirstOrDefault();
+
+            if (firstMatchingImage == null)
+            {
+                return null;
+            }
 
             MediaPreviewViewModel mediaPreview = new MediaPreviewViewModel
             {
@@ -139,7 +145,7 @@ namespace ContentExplorer.Controllers
                 Path = GetUrl(subFile.Directory).Substring(hierarchicalDirectoryInfo.Name.Length).TrimStart('/'),
                 ContentUrl = $"{ConfigurationManager.AppSettings["CDNPath"]}/{GetUrl(subFile)}",
                 ThumbnailUrl = GetUrl(subFile),
-                TaggingUrl = GetUrl(subFile),
+                TaggingUrl = GetUrl(subFile).Substring(hierarchicalDirectoryInfo.Name.Length).TrimStart('/'),
             };
 
             return mediaPreview;
