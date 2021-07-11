@@ -47,13 +47,7 @@ namespace ContentExplorer.Controllers
 
             string[] filters = filter.Split(",".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
             DirectoryInfo hierarchyRootInfo = new DirectoryInfo(hierarchyRootDiskLocation);
-            IEnumerable<DirectoryInfo> subDirectoryInfos =
-                currentDirectoryInfo.EnumerateDirectories();
-
-            IEnumerable<DirectoryInfo> matchingDirectories = subDirectoryInfos
-                .Where(subDirectoryInfo =>
-                    GetAnySubdirectoriesHaveMatchingSubFiles(subDirectoryInfo, mediaType, filters)
-                );
+            IEnumerable<DirectoryInfo> matchingDirectories = GetMatchingSubDirectories(currentDirectoryInfo, mediaType, filters);
 
             ICollection<MediaPreviewViewModel> directoryPreviews = matchingDirectories
                 .Select(subDirectoryInfo =>
@@ -85,7 +79,7 @@ namespace ContentExplorer.Controllers
             ICollection<FileInfo> subFiles = GetMatchingSubFiles(currentDirectoryInfo, mediaType, filters, false)
                 .ToList();
 
-            ICollection<MediaPreviewViewModel> filePreviews = OrderAlphabetically(subFiles)
+            ICollection<MediaPreviewViewModel> filePreviews = subFiles
                 .Skip(skip)
                 .Take(take)
                 .Select(subFile => GetMediaPreviewFromSubFile(subFile, hierarchyRootInfo))
@@ -106,7 +100,7 @@ namespace ContentExplorer.Controllers
             DirectoryInfo currentDirectoryInfo = GetCurrentDirectory(currentDirectory, mediaType);
             string[] filters = filter.Split(",".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
             IEnumerable<FileInfo> fileInfos = GetMatchingSubFiles(currentDirectoryInfo, mediaType, filters, false);
-            FileInfo image = OrderAlphabetically(fileInfos).ElementAt(page - 1);
+            FileInfo image = fileInfos.ElementAt(page - 1);
 
             DirectoryInfo hierarchicalRootInfo = GetHierarchicalRootInfo(mediaType);
             MediaPreviewViewModel imageViewModel = GetMediaPreviewFromSubFile(image, hierarchicalRootInfo);
@@ -114,7 +108,8 @@ namespace ContentExplorer.Controllers
             return Json(imageViewModel, JsonRequestBehavior.AllowGet);
         }
 
-        private MediaPreviewViewModel GetMediaPreviewFromSubDirectory(DirectoryInfo subDirectory, DirectoryInfo hierarchicalDirectoryInfo)
+        private MediaPreviewViewModel GetMediaPreviewFromSubDirectory(DirectoryInfo subDirectory,
+            DirectoryInfo hierarchicalDirectoryInfo)
         {
             IEnumerable<FileInfo> matchingSubFiles = subDirectory.EnumerateFiles("*.*", SearchOption.AllDirectories);
             IEnumerable<FileInfo> orderedSubFiles = OrderAlphabetically(matchingSubFiles);
@@ -137,7 +132,8 @@ namespace ContentExplorer.Controllers
             return mediaPreview;
         }
 
-        private MediaPreviewViewModel GetMediaPreviewFromSubFile(FileInfo subFile, DirectoryInfo hierarchicalDirectoryInfo)
+        private MediaPreviewViewModel GetMediaPreviewFromSubFile(FileInfo subFile,
+            DirectoryInfo hierarchicalDirectoryInfo)
         {
             MediaPreviewViewModel mediaPreview = new MediaPreviewViewModel
             {
@@ -145,13 +141,14 @@ namespace ContentExplorer.Controllers
                 Path = GetUrl(subFile.Directory).Substring(hierarchicalDirectoryInfo.Name.Length).TrimStart('/'),
                 ContentUrl = $"{ConfigurationManager.AppSettings["CDNPath"]}/{GetUrl(subFile)}",
                 ThumbnailUrl = GetUrl(subFile),
-                TaggingUrl = GetUrl(subFile).Substring(hierarchicalDirectoryInfo.Name.Length).TrimStart('/'),
+                TaggingUrl = GetUrl(subFile).Substring(hierarchicalDirectoryInfo.Name.Length).TrimStart('/')
             };
 
             return mediaPreview;
         }
 
-        private IEnumerable<TFilesystemInfo> OrderAlphabetically<TFilesystemInfo>(IEnumerable<TFilesystemInfo> unorderedEnumerable) where TFilesystemInfo : FileSystemInfo
+        private IEnumerable<TFilesystemInfo> OrderAlphabetically<TFilesystemInfo>(
+            IEnumerable<TFilesystemInfo> unorderedEnumerable) where TFilesystemInfo : FileSystemInfo
         {
             IEnumerable<TFilesystemInfo> orderedEnumerable = unorderedEnumerable
                 .OrderBy(subFile => subFile.FullName)
@@ -167,45 +164,59 @@ namespace ContentExplorer.Controllers
             return orderedEnumerable;
         }
 
-        private bool GetAnySubdirectoriesHaveMatchingSubFiles(DirectoryInfo currentDirectoryInfo, string mediaType,
+        private IEnumerable<DirectoryInfo> GetMatchingSubDirectories(DirectoryInfo currentDirectoryInfo, string mediaType,
             string[] filters)
         {
-            IFileSystemFilteringService fileSytemFilteringService = new FileSystemFilteringService();
+            IEnumerable<DirectoryInfo> subDirectories =
+                currentDirectoryInfo.EnumerateDirectories("*", SearchOption.TopDirectoryOnly);
 
-            if (fileSytemFilteringService.DirectoryMatchesFilter(currentDirectoryInfo, filters, mediaType))
+            if (filters.Any() != true)
             {
-                return true;
+                return subDirectories;
             }
 
-            IEnumerable<DirectoryInfo> subDirectories = currentDirectoryInfo.EnumerateDirectories("*", SearchOption.TopDirectoryOnly);
-            bool anyMatchingSubdirectories = subDirectories.Any(directory =>
-                fileSytemFilteringService.DirectoryMatchesFilter(directory, filters, mediaType)
-            );
+            IEnumerable<DirectoryInfo> matchingSubDirectories = subDirectories
+                .Where(subDirectory =>
+                {
+                    string cdnDiskLocation = ConfigurationManager.AppSettings["BaseDirectory"];
+                    string directoryPath = currentDirectoryInfo.FullName.Substring(cdnDiskLocation.Length + 1);
+                    IEnumerable<TagLink> directoryTagLinks = TagLink.GetByDirectory(directoryPath, filters, true);
+                    return directoryTagLinks.Any();
+                });
 
-            return anyMatchingSubdirectories;
+            return matchingSubDirectories;
         }
 
         private IEnumerable<FileInfo> GetMatchingSubFiles(DirectoryInfo currentDirectoryInfo, string mediaType,
             string[] filters, bool includeSubDirectories)
         {
-            FileTypeService fileTypeService = new FileTypeService();
-            IEnumerable<FileInfo> subFiles = includeSubDirectories ?
-                currentDirectoryInfo.EnumerateFiles("*.*", SearchOption.AllDirectories) :
-                currentDirectoryInfo.EnumerateFiles("*.*", SearchOption.TopDirectoryOnly);
-
-            if (mediaType == "image")
+            if (filters.Any() != true)
             {
-                subFiles = subFiles.Where(fileInfo => fileTypeService.IsFileImage(fileInfo.Name));
-            }
-            else
-            {
-                subFiles = subFiles.Where(fileInfo => fileTypeService.IsFileVideo(fileInfo.Name));
+                FileTypeService fileTypeService = new FileTypeService();
+                IEnumerable<FileInfo> subFiles = includeSubDirectories
+                    ? currentDirectoryInfo.EnumerateFiles("*.*", SearchOption.AllDirectories)
+                    : currentDirectoryInfo.EnumerateFiles("*.*", SearchOption.TopDirectoryOnly);
+
+                if (mediaType == "image")
+                {
+                    subFiles = subFiles.Where(fileInfo => fileTypeService.IsFileImage(fileInfo.Name));
+                }
+                else
+                {
+                    subFiles = subFiles.Where(fileInfo => fileTypeService.IsFileVideo(fileInfo.Name));
+                }
+
+                return subFiles;
             }
 
-            IFileSystemFilteringService fileSytemFilteringService = new FileSystemFilteringService();
-            subFiles = subFiles.Where(fileInfo => fileSytemFilteringService.FileMatchesFilter(fileInfo, filters));
+            // If we're filtering the files, any files without a tag will be skipped anyway. We may as well go solely off the tag links
+            string cdnDiskLocation = ConfigurationManager.AppSettings["BaseDirectory"];
+            string directoryPath = currentDirectoryInfo.FullName.Substring(cdnDiskLocation.Length + 1);
+            IEnumerable<TagLink> directoryTagLinks = TagLink.GetByDirectory(directoryPath, filters);
+            IEnumerable<FileInfo> filesFromTagLinks =
+                directoryTagLinks.Select(tagLink => new FileInfo($"{cdnDiskLocation}\\{tagLink.FilePath}"));
 
-            return subFiles;
+            return filesFromTagLinks;
         }
 
 
@@ -248,7 +259,8 @@ namespace ContentExplorer.Controllers
 
         private string GetUrl(FileSystemInfo fileSystemInfo)
         {
-            string rawUrl = fileSystemInfo.FullName.Substring(ConfigurationManager.AppSettings["BaseDirectory"].Length + 1);
+            string rawUrl =
+                fileSystemInfo.FullName.Substring(ConfigurationManager.AppSettings["BaseDirectory"].Length + 1);
             string encodedUrl = rawUrl
                 .Replace("'", "%27")
                 .Replace("\\", "/")

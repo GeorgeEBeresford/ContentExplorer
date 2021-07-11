@@ -169,6 +169,8 @@ namespace ContentExplorer.Models
 
             if (parameters != null)
             {
+                parameters = parameters.Where(parameter => parameter?.Value != null);
+
                 command.Parameters.AddRange(parameters);
             }
 

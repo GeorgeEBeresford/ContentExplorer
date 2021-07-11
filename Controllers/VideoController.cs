@@ -62,34 +62,15 @@ namespace ContentExplorer.Controllers
             {
                 filter = "";
             }
-
-            DirectoryInfo currentDirectory = GetCurrentDirectory(path);
-            ICollection<FileInfo> validFiles = GetMatchingFiles(currentDirectory, filter)
-                .ToList();
-
-            if (page > validFiles.Count)
-            {
-                page = validFiles.Count;
-            }
-
-            int fileCount = validFiles.Count();
-            FileInfo firstFile = validFiles.ElementAt(page - 1);
-
-            ViewBag.Media = firstFile;
-            ViewBag.MediaCount = fileCount;
             ViewBag.Path = path;
             ViewBag.Id = page;
             ViewBag.Filter = filter;
 
-            int maxPreviews = validFiles.Count > 15 ? 15 : validFiles.Count;
             // Zero-based index
             int pageIndex = page - 1;
 
             int startingPreview = pageIndex - 7 < 1 ? 1 : page - 7;
             ViewBag.StartingPreview = startingPreview;
-
-            IEnumerable<FileInfo> previews = validFiles.Skip(startingPreview - 1).Take(maxPreviews);
-            ViewBag.Previews = previews;
 
             return View();
         }
@@ -135,7 +116,7 @@ namespace ContentExplorer.Controllers
             }
 
             VideoThumbnailService videoThumbnailService = new VideoThumbnailService();
-            IEnumerable<FileInfo> videos = GetMatchingFiles(directory, "");
+            IEnumerable<FileInfo> videos = directory.EnumerateFiles("*", SearchOption.AllDirectories);
             foreach (FileInfo video in videos)
             {
                 videoThumbnailService.DeleteThumbnailIfExists(video.FullName);
@@ -155,7 +136,7 @@ namespace ContentExplorer.Controllers
             }
 
             NameFormatService nameFormatService = new NameFormatService();
-            IEnumerable<FileInfo> videos = GetMatchingFiles(directory, "");
+            IEnumerable<FileInfo> videos = directory.EnumerateFiles("*", SearchOption.AllDirectories);
             foreach (FileInfo video in videos)
             {
                 nameFormatService.FormatFileName(video);
@@ -169,73 +150,6 @@ namespace ContentExplorer.Controllers
             DirectoryInfo directoryInfo = new DirectoryInfo(Path.Combine(ConfigurationManager.AppSettings["BaseDirectory"], ConfigurationManager.AppSettings["VideosPath"], relativePath));
 
             return directoryInfo;
-        }
-
-        private IEnumerable<FileInfo> GetMatchingFiles(DirectoryInfo directory, string filter)
-        {
-            FileTypeService fileTypeService = new FileTypeService();
-
-            IEnumerable<FileInfo> validFiles = directory
-                .GetFiles()
-                .Where(file => fileTypeService.IsFileVideo(file.Name))
-                .Where(file => VideoMatchesFilter(file, filter))
-                .OrderBy(file => file.Name)
-                .ThenBy(file =>
-                    {
-                        Match numbersInName = Regex.Match(file.Name, "[0-9]+");
-
-                        bool isNumber = int.TryParse(numbersInName.Value, out int numericalMatch);
-
-                        return isNumber ? numericalMatch : 0;
-                    }
-                );
-
-            return validFiles;
-        }
-
-        private bool VideoMatchesFilter(FileInfo fileInfo, string filterString)
-        {
-            if (string.IsNullOrEmpty(filterString))
-            {
-                return true;
-            }
-
-            string websiteDiskLocation = ConfigurationManager.AppSettings["BaseDirectory"];
-            string filePath = fileInfo.FullName.Substring(websiteDiskLocation.Length + 1);
-
-            string[] filters = filterString.ToLowerInvariant().Split(',');
-            bool isMatch = true;
-
-            // Make sure the file matches all of our filters
-            for (int filterIndex = 0; filterIndex < filters.Length && isMatch; filterIndex++)
-            {
-                string filter = filters[filterIndex];
-
-                if (filter == "")
-                {
-                    isMatch = true;
-                }
-                else if (filter.StartsWith("type:"))
-                {
-                    // Remove the special tag from the filter
-                    string filterType = filter.Substring("type:".Length).Trim();
-
-                    isMatch = fileInfo.Extension.Split('.').Last().Equals(filterType, StringComparison.OrdinalIgnoreCase);
-                }
-                else if (filter.StartsWith("name:"))
-                {
-                    // Remove the special tag from the filter
-                    string filterName = filter.Substring("name:".Length).Trim();
-
-                    isMatch = fileInfo.Name.ToLowerInvariant().Contains(filterName.ToLowerInvariant());
-                }
-                else
-                {
-                    isMatch = Tag.GetByFile(filePath).Any(tag => tag.TagName.Equals(filter, StringComparison.OrdinalIgnoreCase));
-                }
-            }
-
-            return isMatch;
         }
     }
 }

@@ -3,12 +3,6 @@
     string relativeDirectory = ViewBag.Path;
     int currentPage = ViewBag.Id;
     string filter = ViewBag.Filter;
-    FileInfo media = ViewBag.Media;
-    int maxPages = ViewBag.MediaCount;
-
-
-
-    ViewBag.Title = media.Directory.Name + " - " + media.Name;
 
     string baseSiteDirectory = ConfigurationManager.AppSettings["BaseDirectory"];
     Layout = "./_Layout.cshtml";
@@ -21,7 +15,6 @@
 <input type="hidden" value="@cdn" data-cdn-path autocomplete="off" />
 <input type="hidden" value="@relativeDirectory" data-relative-directory autocomplete="off" />
 <input type="hidden" value="@filter" data-filter autocomplete="off" />
-<input type="hidden" value="@maxPages" data-max-pages autocomplete="off" />
 
 <nav class="steppingstone_list" data-stepping-stones></nav>
 
@@ -30,10 +23,10 @@
 @RenderSection("MediaView")
 
 
-<div class="button_wrapper" data-page-button-wrapper>
+<div class="button_wrapper" data-page-button-wrapper style="display: none">
     <div class="button_list" data-page-button-list></div>
     <div>
-        <b data-current-page>@currentPage</b> of @maxPages
+        <b data-current-page>@currentPage</b> of <span data-max-pages></span>
     </div>
     <div class="controls" data-controls>
         @RenderSection("Controls", false)

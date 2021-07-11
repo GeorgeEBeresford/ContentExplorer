@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
 using System.Linq;
+using System.Web;
 using System.Web.Mvc;
 using ContentExplorer.Models;
 using ContentExplorer.Services;
@@ -23,11 +24,7 @@ namespace ContentExplorer.Controllers
                 .Select(filePath => Path.Combine(rootDirectory, filePath))
                 .ToArray();
 
-            bool isSuccess = true;
-            foreach (string diskLocation in diskLocations)
-            {
-                isSuccess &= AddTags(diskLocation, tags);
-            }
+            bool isSuccess = AddTags(diskLocations, tags);
 
             return Json(isSuccess);
         }
@@ -36,7 +33,11 @@ namespace ContentExplorer.Controllers
         public JsonResult AddTagsToDirectories(string[] directoryPaths, string[] tags, string mediaType)
         {
             // Filter inputs that would make no sense
-            directoryPaths = directoryPaths.Where(filePath => filePath != "").ToArray();
+            directoryPaths = directoryPaths
+                .Where(filePath => filePath != "")
+                .Select(HttpUtility.UrlDecode)
+                .ToArray();
+
             tags = tags.Where(tag => tag != "").Select(tag => tag.Trim()).ToArray();
 
             string cdnDiskLocation = ConfigurationManager.AppSettings["BaseDirectory"];
@@ -49,29 +50,11 @@ namespace ContentExplorer.Controllers
                 DirectoryInfo directory = new DirectoryInfo(directoryPath);
                 if (directory.Exists)
                 {
-                    FileInfo[] subFiles = directory.GetFiles("*.*", SearchOption.AllDirectories);
-                    foreach (FileInfo subFile in subFiles)
-                    {
-                        isSuccess &= AddTags(subFile.FullName.Substring(cdnDiskLocation.Length + 1), tags);
-                    }
+                    IEnumerable<string> fileNames = directory.EnumerateFiles("*.*", SearchOption.AllDirectories)
+                        .Select(subFile => subFile.FullName.Substring(cdnDiskLocation.Length + 1));
+
+                    isSuccess &= AddTags(fileNames, tags);
                 }
-            }
-
-            return Json(isSuccess);
-        }
-
-        [HttpPost]
-        public JsonResult SetTags(string[] filePaths, string[] tags)
-        {
-            // Filter inputs that would make no sense
-            filePaths = filePaths.Where(filePath => filePath != "").ToArray();
-            tags = tags.Where(tag => tag != "").ToArray();
-
-            bool isSuccess = true;
-            foreach (string filePath in filePaths)
-            {
-                isSuccess &= AddTags(filePath, tags);
-                isSuccess &= RemoveUnusedTagLinks(filePath, tags);
             }
 
             return Json(isSuccess);
@@ -141,63 +124,58 @@ namespace ContentExplorer.Controllers
             return Json(true, JsonRequestBehavior.AllowGet);
         }
 
-        private bool AddTags(string filePath, IEnumerable<string> tagNames)
+        [HttpGet]
+        public JsonResult DeleteUnusedTags()
         {
-            string webDiskLocation = ConfigurationManager.AppSettings["BaseDirectory"];
-            FileInfo fileInfo = new FileInfo(Path.Combine(webDiskLocation, filePath));
+            IEnumerable<TagLink> allTagLinks = TagLink.GetAll();
+            string cdnDiskPath = ConfigurationManager.AppSettings["BaseDirectory"];
 
-            if (fileInfo.Exists == false)
+            IEnumerable<TagLink> unusedTagLinks = allTagLinks
+                .Where(tagLink => new FileInfo($"{cdnDiskPath}\\{tagLink.FilePath}").Exists != true);
+
+            foreach (TagLink tagLink in unusedTagLinks)
             {
-                return false;
+                tagLink.Delete();
             }
 
-            ICollection<Tag> tagsByFileName = Tag.GetByFile(filePath);
-
-            bool isSuccess = true;
-            foreach (string tagName in tagNames)
-            {
-                Tag savedTag = GetOrCreateTag(tagName);
-
-                if (savedTag == null)
-                {
-                    isSuccess = false;
-                }
-
-                if (isSuccess)
-                {
-                    bool tagLinkExists = tagsByFileName.Any(tagByFileName => tagByFileName.TagName == tagName);
-
-                    if (tagLinkExists == false)
-                    {
-                        TagLink savedTagLink = LinkFileToTag(filePath, savedTag.TagId);
-
-                        if (savedTagLink == null)
-                        {
-                            isSuccess = false;
-                        }
-                        else
-                        {
-                            tagsByFileName.Add(savedTag);
-                        }
-                    }
-                }
-            }
-
-            return isSuccess;
+            return Json(true, JsonRequestBehavior.AllowGet);
         }
 
-        private TagLink LinkFileToTag(string filePath, int tagId)
+        private bool AddTags(IEnumerable<string> filePaths, ICollection<string> tagNames)
         {
-            // If the tag link isn't saved yet, save it
-            TagLink tagLink = new TagLink
-            {
-                FilePath = filePath,
-                TagId = tagId
-            };
+            IEnumerable<Tag> requestedTags = tagNames
+                .Select(GetOrCreateTag);
 
-            bool isSuccess = tagLink.Create();
+            var filesMappedToTags = filePaths
+                .Select(filePath =>
+                    new
+                    {
+                        FilePath = filePath,
+                        TagsByFileName = Tag.GetByFile(filePath)
+                    }
+                )
+                .ToList();
 
-            return isSuccess ? tagLink : null;
+            IEnumerable<TagLink> missingTagLinks = filesMappedToTags
+                .SelectMany(fileMappedToTags =>
+
+                    requestedTags.Where(requestedTag =>
+
+                            fileMappedToTags.TagsByFileName.All(existingTag =>
+                                existingTag.TagId != requestedTag.TagId
+                            )
+                        )
+                        .Select(missingTag => new TagLink
+                        {
+                            TagId = missingTag.TagId,
+                            FilePath = fileMappedToTags.FilePath
+                        })
+                )
+                .ToList();
+
+            bool isSuccess = TagLink.CreateRange(missingTagLinks);
+
+            return isSuccess;
         }
 
         private Tag GetOrCreateTag(string tagName)
@@ -217,31 +195,6 @@ namespace ContentExplorer.Controllers
 
             bool isSuccess = savedTag.Create();
             return isSuccess ? savedTag : null;
-        }
-
-        private bool RemoveUnusedTagLinks(string filePath, ICollection<string> requestedTags)
-        {
-            ICollection<Tag> tagsByFileName = Tag.GetByFile(filePath);
-            ICollection<TagLink> tagLinks = TagLink.GetByFile(filePath);
-
-            bool isSuccess = true;
-            foreach (Tag tag in tagsByFileName)
-            {
-                bool isTagRequested = requestedTags.Any(splitTag => tag.TagName == splitTag);
-
-                if (!isTagRequested)
-                {
-                    TagLink matchingTagLink = tagLinks.FirstOrDefault(tagLink => tagLink.TagId == tag.TagId);
-
-                    // If the tag has not been requested, delete it from our saved links
-                    if (matchingTagLink != null)
-                    {
-                        isSuccess = matchingTagLink.Delete();
-                    }
-                }
-            }
-
-            return isSuccess;
         }
     }
 }

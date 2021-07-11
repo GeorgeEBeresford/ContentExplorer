@@ -27,14 +27,7 @@ namespace ContentExplorer.Services
             {
                 string filter = filters[filterIndex];
 
-                bool? fileMatchesSpecialFilter = FileMatchesSpecialFilter(fileInfo, filter);
-
-                if (fileMatchesSpecialFilter.HasValue)
-                {
-                    return fileMatchesSpecialFilter.Value;
-                }
-
-                IEnumerable<Tag> tagsForFile = Tag.GetByFile(filePath);
+                IEnumerable<Tag> tagsForFile = Tag.GetByFile(filePath, filters);
                 isMatch = tagsForFile.Any(tag =>
                     tag.TagName.Equals(filter, StringComparison.OrdinalIgnoreCase)
                 );
@@ -43,40 +36,39 @@ namespace ContentExplorer.Services
             return isMatch;
         }
 
-        public bool TagLinkMatchesFilter(IEnumerable<TagLink> tagLinksForFile, string[] filters)
+        public bool TagsMatchFilter(IEnumerable<Tag> tags, IEnumerable<string> filters)
+        {
+            bool tagsMatchFilter = filters.All(filter =>
+                tags.Any(tag =>
+                    filter.Equals(tag.TagName, StringComparison.OrdinalIgnoreCase)
+                )
+            );
+
+            return tagsMatchFilter;
+        }
+
+        public bool TagLinkMatchesFilter(IEnumerable<TagLink> tagLinks, string[] filters)
         {
             if (filters.Any() != true)
             {
                 return true;
             }
 
-            tagLinksForFile = tagLinksForFile.ToList();
+            string[] tagsForFile = tagLinks
+                .GroupBy(tagLink => tagLink.GetTag().TagName)
+                .Select(tagGrouping => tagGrouping.Key)
+                .ToArray();
 
-            if (tagLinksForFile.Any() != true)
+            if (tagsForFile.Any() != true)
             {
                 return false;
             }
 
-            bool isMatch = true;
-            string websiteDiskLocation = ConfigurationManager.AppSettings["BaseDirectory"];
-            string filePath = tagLinksForFile.First().FilePath;
-            FileInfo fileInfo = new FileInfo($"{websiteDiskLocation}\\{filePath}");
-
             // Make sure the file matches all of our filters
+            bool isMatch = true;
             for (int filterIndex = 0; filterIndex < filters.Length && isMatch; filterIndex++)
             {
                 string filter = filters[filterIndex];
-
-                bool? fileMatchesSpecialFilter = FileMatchesSpecialFilter(fileInfo, filter);
-
-                if (fileMatchesSpecialFilter.HasValue)
-                {
-                    return fileMatchesSpecialFilter.Value;
-                }
-
-                IEnumerable<string> tagsForFile = tagLinksForFile
-                    .GroupBy(tagLink => tagLink.GetTag().TagName)
-                    .Select(tagGrouping => tagGrouping.Key);
 
                 isMatch = tagsForFile.Any(tagName =>
                     tagName.Equals(filter, StringComparison.OrdinalIgnoreCase)
@@ -90,56 +82,10 @@ namespace ContentExplorer.Services
         {
             string cdnDiskLocation = ConfigurationManager.AppSettings["BaseDirectory"];
             string directoryPath = directoryInfo.FullName.Substring(cdnDiskLocation.Length + 1);
-            IEnumerable<FileInfo> subFiles = directoryInfo.EnumerateFiles("*.*", SearchOption.AllDirectories);
-            FileTypeService fileTypeService = new FileTypeService();
-
-            if (mediaType == "image")
-            {
-                subFiles = subFiles.Where(fileInfo => fileTypeService.IsFileImage(fileInfo.Name));
-            }
-            else
-            {
-                subFiles = subFiles.Where(fileInfo => fileTypeService.IsFileVideo(fileInfo.Name));
-            }
-
-            // Check for any special filters
-            bool directoryContainsMatchingFile = subFiles
-                .Any(subfile =>
-                    filters.Any(filter =>
-
-                        FileMatchesSpecialFilter(subfile, filter) ?? false
-                    )
-                );
-
-            if (directoryContainsMatchingFile)
-            {
-                return true;
-            }
-
-            ICollection<TagLink> tagLinksForDirectory = TagLink.GetByDirectory(directoryPath);
-            directoryContainsMatchingFile = TagLinkMatchesFilter(tagLinksForDirectory, filters);
+            ICollection<Tag> directoryTags = Tag.GetByDirectory(directoryPath, filters, true);
+            bool directoryContainsMatchingFile = directoryTags.Any();
 
             return directoryContainsMatchingFile;
-        }
-
-        private bool? FileMatchesSpecialFilter(FileInfo fileInfo, string filter)
-        {
-            if (filter.StartsWith("type:"))
-            {
-                // Remove the special tag from the filter
-                string filterType = filter.Substring("type:".Length).Trim();
-
-                return fileInfo.Extension.Split('.').Last().Equals(filterType, StringComparison.OrdinalIgnoreCase);
-            }
-            else if (filter.StartsWith("name:"))
-            {
-                // Remove the special tag from the filter
-                string filterName = filter.Substring("name:".Length).Trim();
-
-                return fileInfo.Name.ToLowerInvariant().Contains(filterName.ToLowerInvariant());
-            }
-
-            return null;
         }
     }
 }

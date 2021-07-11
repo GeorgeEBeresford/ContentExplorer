@@ -4,7 +4,6 @@
     this.cdn = $("[data-cdn-path]").val();
     this.relativeDirectory = $("[data-relative-directory]").val();
     this.filter = $("[data-filter]").val();
-    this.maxPages = +$("[data-max-pages]").val();
 
     this.$previousButton = $("[data-button='previous']");
     this.$nextButton = $("[data-button='next']");
@@ -20,6 +19,7 @@
     this.$mediaLoader = $("[data-loader='media']");
     this.$escapeslideShow = $("[data-stop-slideshow]");
     this.$steppingStones = $("[data-stepping-stones]");
+    this.$maxPages = $("[data-max-pages]");
 
     this.isSlideshowEnabled = this.$isSlideshowEnabled.is(":checked");
     this.slideshowDelay = +this.$slideshowDelay.val();
@@ -185,6 +185,7 @@ MediaView.prototype.renderPageButtonsAsync = function () {
         .then(function (mediaPreviews) {
 
             self.$pageButtons.find("[data-page-button-list]").html("");
+            self.$maxPages.val(mediaPreviews.Total).show();
 
             if (mediaPreviews.Total > 1) {
 
@@ -195,7 +196,10 @@ MediaView.prototype.renderPageButtonsAsync = function () {
                     var mediaViewModel = mediaPreviews.CurrentPage[mediaViewModelIndex];
                     self.renderPageButton(mediaViewModel, mediaViewModelIndex, pageFromFileNumber);
                 }
+
+                self.$pageButtons.show();
             }
+
 
             deferred.resolve();
         })
@@ -302,12 +306,13 @@ MediaView.prototype.addPageIncrement = function (pageIncrement) {
 
     var currentPage = +this.$currentPage.text();
     var incrementedPage = currentPage + pageIncrement;
+    var maxPages = +this.$maxPages.val();
 
     if (incrementedPage < 1) {
 
-        incrementedPage = this.maxPages;
+        incrementedPage = maxPages;
 
-    } else if (incrementedPage > this.maxPages) {
+    } else if (incrementedPage > maxPages) {
 
         incrementedPage = 1;
     }
