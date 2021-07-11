@@ -179,7 +179,7 @@ namespace ContentExplorer.Controllers
                 .Where(subDirectory =>
                 {
                     string cdnDiskLocation = ConfigurationManager.AppSettings["BaseDirectory"];
-                    string directoryPath = currentDirectoryInfo.FullName.Substring(cdnDiskLocation.Length + 1);
+                    string directoryPath = subDirectory.FullName.Substring(cdnDiskLocation.Length + 1);
                     IEnumerable<TagLink> directoryTagLinks = TagLink.GetByDirectory(directoryPath, filters, true);
                     return directoryTagLinks.Any();
                 });
