@@ -198,13 +198,18 @@ namespace ContentExplorer.Models
                 FOREIGN KEY(TagId) REFERENCES Tags(TagId)
             )";
 
-            bool isSuccess;
             using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
             {
-                isSuccess = dbContext.ExecuteNonQuery(query);
+                try
+                {
+                    dbContext.ExecuteNonQuery(query);
+                    return true;
+                }
+                catch (SqliteException)
+                {
+                    return false;
+                }
             }
-
-            return isSuccess;
         }
 
         /// <summary>

@@ -61,13 +61,6 @@ namespace ContentExplorer.Controllers
             ViewBag.Id = page;
             ViewBag.Filter = filter;
 
-
-            // Zero-based index
-            int pageIndex = page - 1;
-
-            int startingPreview = pageIndex - 7 < 1 ? 1 : page - 7;
-            ViewBag.StartingPreview = startingPreview;
-
             return View();
         }
 

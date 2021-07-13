@@ -1,10 +1,7 @@
 ﻿@{
     string cdn = ConfigurationManager.AppSettings["CDNPath"];
-    string relativeDirectory = ViewBag.Path;
-    int currentPage = ViewBag.Id;
-    string filter = ViewBag.Filter;
-
     string baseSiteDirectory = ConfigurationManager.AppSettings["BaseDirectory"];
+
     Layout = "./_Layout.cshtml";
 }
 
@@ -13,8 +10,9 @@
 
 <input type="hidden" value="@baseSiteDirectory" data-site-base-directory autocomplete="off" />
 <input type="hidden" value="@cdn" data-cdn-path autocomplete="off" />
-<input type="hidden" value="@relativeDirectory" data-relative-directory autocomplete="off" />
-<input type="hidden" value="@filter" data-filter autocomplete="off" />
+<input type="hidden" value="@ViewBag.Path" data-relative-directory autocomplete="off" />
+<input type="hidden" value="@ViewBag.Filter" data-filter autocomplete="off" />
+<input type="hidden" value="@ViewBag.StartingPreview" data-starting-preview autocomplete="off" />
 
 <nav class="steppingstone_list" data-stepping-stones></nav>
 
@@ -26,7 +24,7 @@
 <div class="button_wrapper" data-page-button-wrapper style="display: none">
     <div class="button_list" data-page-button-list></div>
     <div>
-        <b data-current-page>@currentPage</b> of <span data-max-pages></span>
+        <b data-current-page>@ViewBag.Id</b> of <span data-max-pages></span>
     </div>
     <div class="controls" data-controls>
         @RenderSection("Controls", false)

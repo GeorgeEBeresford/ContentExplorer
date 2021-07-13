@@ -18,7 +18,7 @@ ImageView.prototype.refreshMediaDisplay = function (subFilePreview, previousMedi
     MediaView.prototype.refreshMediaDisplay.call(this, subFilePreview, previousMediaInformation);
 
     this.$media.attr("src", subFilePreview.ContentUrl).attr("alt", subFilePreview.Name);
-    this.$mediaLink.attr("href", subFilePreview.Content);
+    this.$mediaLink.attr("href", subFilePreview.ContentUrl);
 
     if (!this.isSlideshowEnabled) {
 

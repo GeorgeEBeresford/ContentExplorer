@@ -27,7 +27,7 @@ namespace ContentExplorer.Models
         private string GetConnectionStringFromName(string connectionStringName)
         {
             ConnectionStringSettings connectionStringSettings = ConfigurationManager.ConnectionStrings[connectionStringName];
-            string connectionString =connectionStringSettings.ToString();
+            string connectionString = connectionStringSettings.ToString();
 
             return connectionString;
         }
@@ -54,7 +54,7 @@ namespace ContentExplorer.Models
 
         public bool ExecuteNonQuery(string query, SqliteParameter parameter)
         {
-            return ExecuteNonQuery(query, new SqliteParameter[] {parameter});
+            return ExecuteNonQuery(query, new SqliteParameter[] { parameter });
         }
 
         public bool ExecuteNonQuery(string query, IEnumerable<SqliteParameter> parameters)
@@ -74,7 +74,7 @@ namespace ContentExplorer.Models
 
         public ICollection<IDictionary<string, object>> GetDataRows(string query, SqliteParameter parameter)
         {
-            return GetDataRows(query, new SqliteParameter[] {parameter});
+            return GetDataRows(query, new SqliteParameter[] { parameter });
         }
 
         public ICollection<IDictionary<string, object>> GetDataRows(string query, IEnumerable<SqliteParameter> parameters)
@@ -93,7 +93,7 @@ namespace ContentExplorer.Models
 
         public IDictionary<string, object> GetDataRow(string query, SqliteParameter parameter)
         {
-            return GetDataRow(query, new SqliteParameter[] {parameter});
+            return GetDataRow(query, new SqliteParameter[] { parameter });
         }
 
         public IDictionary<string, object> GetDataRow(string query, IEnumerable<SqliteParameter> parameters)
@@ -112,7 +112,7 @@ namespace ContentExplorer.Models
 
         public object GetScalar(string query, SqliteParameter parameter)
         {
-            return GetScalar(query, new SqliteParameter[] {parameter});
+            return GetScalar(query, new SqliteParameter[] { parameter });
         }
 
         public object GetScalar(string query, IEnumerable<SqliteParameter> parameters)
@@ -124,17 +124,17 @@ namespace ContentExplorer.Models
             return scalar;
         }
 
+        /// <summary>
+        /// Creates a new SQLite connection
+        /// </summary>
+        /// <param name="connectionString">A string which maps to a configured connection string</param>
+        /// <exception cref="SqliteException">An exception occured while opening the database</exception>
+        /// <returns></returns>
         private static SqliteConnection GenerateConnection(string connectionString)
         {
             SqliteConnection connection = new SqliteConnection(connectionString);
 
-            try
-            {
-                connection.Open();
-            }
-            catch (Exception)
-            {
-            }
+            connection.Open();
 
             return connection;
         }
@@ -163,9 +163,10 @@ namespace ContentExplorer.Models
 
         private SqliteCommand GenerateCommand(string query, IEnumerable<SqliteParameter> parameters)
         {
-            SqliteCommand command = SqlConnection.CreateCommand();
-            command.CommandText = query;
-            command.CommandTimeout = 120;
+            SqliteCommand command = new SqliteCommand(query, SqlConnection)
+            {
+                CommandTimeout = 120
+            };
 
             if (parameters != null)
             {

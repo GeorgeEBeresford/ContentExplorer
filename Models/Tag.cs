@@ -261,13 +261,18 @@ namespace ContentExplorer.Models
                 TagName TEXT NOT NULL
             )";
 
-            bool isSuccess;
             using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
             {
-                isSuccess = dbContext.ExecuteNonQuery(query);
+                try
+                {
+                    dbContext.ExecuteNonQuery(query);
+                    return true;
+                }
+                catch (SqliteException)
+                {
+                    return false;
+                }
             }
-
-            return isSuccess;
         }
 
         public bool Create()

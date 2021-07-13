@@ -21,6 +21,11 @@
     this.$steppingStones = $("[data-stepping-stones]");
     this.$maxPages = $("[data-max-pages]");
 
+    // If we're viewing a page where putting the preview for the current item in the middle would cause issues,
+    // put the preview at the start (position 1). Otherwise, put the item in the middle.
+    this.startingPreview = this.$currentPage.text() - 7 < 1 ? 1 : this.$currentPage.text() - 7;
+    console.log(this.startingPreview);
+    console.log(this.$currentPage.text());
     this.isSlideshowEnabled = this.$isSlideshowEnabled.is(":checked");
     this.slideshowDelay = +this.$slideshowDelay.val();
 
@@ -59,19 +64,23 @@ MediaView.prototype.initialiseAsync = function () {
     var self = this;
 
     // Load the media for the current page
-    var callAsynchronousInitialisers = $.when(
+    var renderDirectoryDependencies = $.when(
         this.renderSteppingStonesAsync(),
-        this.navigatePagesAsync(0),
         this.renderPageButtonsAsync()
     );
 
-    callAsynchronousInitialisers
+    renderDirectoryDependencies
         .then(function () {
 
-            // Initialise the rest of the page
-            self.slideshowThread();
-            self.addEventHandlers();
-            self.synchroniseFocus();
+            self.navigatePagesAsync(0)
+                .then(function() {
+
+
+                    // Initialise the rest of the page
+                    self.slideshowThread();
+                    self.addEventHandlers();
+                    self.synchroniseFocus();
+                });
 
             deferred.resolve();
         })
@@ -180,8 +189,9 @@ MediaView.prototype.renderPageButtonsAsync = function () {
 
     var fileNumber = +this.$currentPage.text();
     var pageFromFileNumber = Math.ceil(fileNumber / 15);
+    console.log("pageFromFileNumber: " + pageFromFileNumber);
 
-    this.mediaRepository.getSubFilesAsync(this.relativeDirectory, this.mediaType, this.filter, ((pageFromFileNumber - 1) * 15), 15)
+    this.mediaRepository.getSubFilesAsync(this.relativeDirectory, this.mediaType, this.filter, this.startingPreview - 1, 15)
         .then(function (mediaPreviews) {
 
             self.$pageButtons.find("[data-page-button-list]").html("");
@@ -189,17 +199,9 @@ MediaView.prototype.renderPageButtonsAsync = function () {
 
             if (mediaPreviews.Total > 1) {
 
-                for (var mediaViewModelIndex = 0;
-                    mediaViewModelIndex < mediaPreviews.CurrentPage.length;
-                    mediaViewModelIndex++) {
-
-                    var mediaViewModel = mediaPreviews.CurrentPage[mediaViewModelIndex];
-                    self.renderPageButton(mediaViewModel, mediaViewModelIndex, pageFromFileNumber);
-                }
-
+                self.renderPageButtons(mediaPreviews, pageFromFileNumber);
                 self.$pageButtons.show();
             }
-
 
             deferred.resolve();
         })
@@ -211,41 +213,51 @@ MediaView.prototype.renderPageButtonsAsync = function () {
     return deferred.promise();
 }
 
-MediaView.prototype.renderPageButton = function (mediaViewModel, mediaViewModelIndex, page) {
+/**
+ * 
+ * @param {any} mediaViewModels - A collection of media view models that have been retrieved from the API
+ * @param {number} page - The page from the index that this media item was retrieved from
+ */
+MediaView.prototype.renderPageButtons = function (mediaViewModels, page) {
 
-    var pageNumber = (mediaViewModelIndex + 1) + ((page - 1) * 15);
+    var numberOfPages = mediaViewModels.CurrentPage.length;
+    for (var pageButtonIndex = 0; pageButtonIndex < numberOfPages; pageButtonIndex++) {
 
-    var $pageButton = $("<a>").attr("data-page-button", pageNumber);
+        var mediaViewModel = mediaViewModels.CurrentPage[pageButtonIndex];
+        var pageNumber = this.startingPreview + pageButtonIndex;
+        console.log("pageNumber: " + pageNumber);
+        var $pageButton = $("<a>").attr("data-page-button", pageNumber);
 
-    if (pageNumber !== +this.$currentPage.text()) {
+        if (pageNumber !== +this.$currentPage.text()) {
 
-        $pageButton
-            .attr("href",
-                "/" +
-                this.controller +
-                "/" +
-                "View" +
-                "?path=" +
-                this.relativeDirectory +
-                "&page=" +
-                pageNumber +
-                "&filter=" +
-                this.filter)
-            .addClass("button_medialink");
+            $pageButton
+                .attr("href",
+                    "/" +
+                    this.controller +
+                    "/" +
+                    "View" +
+                    "?path=" +
+                    this.relativeDirectory +
+                    "&page=" +
+                    pageNumber +
+                    "&filter=" +
+                    this.filter)
+                .addClass("button_medialink");
+        }
+        else {
+
+            $pageButton.addClass("button_medialink-disabled");
+        }
+
+        var $pagePreview = $("<div>")
+            .addClass("button_mediapreview")
+            .css("background-image", "url(\"" + this.cdn + "/" + this.formatThumbnailUrl(mediaViewModel.ThumbnailUrl) + "\")")
+            .css("background-size", "cover");
+
+        $pageButton.append($pagePreview);
+
+        this.$pageButtons.find("[data-page-button-list]").append($pageButton);
     }
-    else {
-
-        $pageButton.addClass("button_medialink-disabled");
-    }
-
-    var $pagePreview = $("<div>")
-        .addClass("button_mediapreview")
-        .css("background-image", "url(\"" + this.cdn + "/" + this.formatThumbnailUrl(mediaViewModel.ThumbnailUrl) + "\")")
-        .css("background-size", "cover");
-
-    $pageButton.append($pagePreview);
-
-    this.$pageButtons.find("[data-page-button-list]").append($pageButton);
 }
 
 /**
