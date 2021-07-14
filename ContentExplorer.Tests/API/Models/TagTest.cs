@@ -66,7 +66,7 @@ namespace ContentExplorer.Tests.API.Models
         public void GetByFileAndFilters()
         {
             TagLink tagLink = CreateAndReturnTagLink();
-            ICollection<Tag> tags = Tag.GetByFile(tagLink.FilePath, new []{ TestTagName });
+            ICollection<Tag> tags = Tag.GetByFile(tagLink.FilePath, new []{ DefaultTestTagName });
 
             Assert.IsNotNull(tags, "Returned tag collection was null");
             Assert.AreNotEqual(0, tags.Count, "No matching tags were found");

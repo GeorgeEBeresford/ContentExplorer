@@ -109,36 +109,52 @@ namespace ContentExplorer.Models
 
         public static ICollection<TagLink> GetByDirectory(string directoryPath, string[] filters, bool isRecursive = false)
         {
+            filters = filters.Select(filter => filter.ToLowerInvariant()).ToArray();
+
             string cacheKey = $"[TagLinksByDirectoryAndFilters]{directoryPath}{string.Join(",", filters)}{isRecursive}";
             if (HttpContext.Current.Cache[cacheKey] is ICollection<TagLink> cachedTags)
             {
                 return cachedTags;
             }
 
-            string[] stringParameters = new string[filters.Length];
+            string query = $@"WITH FilePathTags AS (
+	                            SELECT
+		                            (',' || GROUP_CONCAT(Tags.TagName) || ',') AS [CombinedTags],
+		                            TagLinks.FilePath
+	                            FROM TagLinks
+	                            INNER JOIN Tags ON Tags.TagId = TagLinks.TagId
+	                            GROUP BY TagLinks.FilePath
+                            )
+                            SELECT
+	                            TagLinks.FilePath,
+	                            TagLinks.TagLinkId,
+	                            Tags.TagId,
+	                            Tags.TagName
+                            FROM TagLinks
+                            INNER JOIN Tags ON Tags.TagId = TagLinks.TagId
+                            INNER JOIN FilePathTags ON FilePathTags.FilePath = TagLinks.FilePath
+                            WHERE TagLinks.FilePath LIKE @FilePath";
+
             SqliteParameter[] dbParameters = new SqliteParameter[filters.Length + 2];
 
             for (int filterIndex = 0; filterIndex < filters.Length; filterIndex++)
             {
                 string stringParameter = $"@{filterIndex}";
-                stringParameters[filterIndex] = stringParameter;
-                dbParameters[filterIndex] = SqliteWrapper.GenerateParameter(stringParameter, filters[filterIndex]);
+                query += $" AND FilePathTags.CombinedTags LIKE {stringParameter}";
+                dbParameters[filterIndex] = SqliteWrapper.GenerateParameter(stringParameter, $"%,{filters[filterIndex]},%");
             }
 
             // Add the file path parameter to the end of the array
             dbParameters[filters.Length] = SqliteWrapper.GenerateParameter("@FilePath", $"{directoryPath}\\%");
 
-            string query = $@"SELECT Tags.TagId, Tags.TagName, TagLinks.FilePath, TagLinks.TagLinkId
-                                FROM Tags
-                                INNER JOIN TagLinks ON Tags.TagId = TagLinks.TagId
-                                WHERE TagLinks.FilePath LIKE @FilePath
-                                AND Tags.TagName IN ({string.Join(",", stringParameters)})";
-
             if (isRecursive != true)
             {
-                query += " AND FilePath NOT LIKE @ExcludedFilePath";
+                query += " AND TagLinks.FilePath NOT LIKE @ExcludedFilePath";
                 dbParameters[filters.Length + 1] = SqliteWrapper.GenerateParameter("@ExcludedFilePath", $"{directoryPath}\\%\\%");
             }
+
+            query += " GROUP BY TagLinks.FilePath";
+
 
             ICollection<IDictionary<string, object>> dataRows;
             using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
@@ -149,6 +165,9 @@ namespace ContentExplorer.Models
             ICollection<TagLink> tagLinks = dataRows
                 .Select(dataRow =>
                     new TagLink(dataRow)
+                    {
+                        Tag = new Tag(dataRow)
+                    }
                 )
                 .ToList();
 

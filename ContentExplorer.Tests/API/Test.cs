@@ -5,7 +5,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ContentExplorer.Tests.API
 {
-    [TestClass]
     public abstract class Test
     {
         protected Test()
@@ -15,7 +14,12 @@ namespace ContentExplorer.Tests.API
 
         private FakeHttpContext.FakeHttpContext FakeHttpContext { get; }
 
-        protected string TestTagName => "TestTag";
+        protected const string DefaultTestTagName = "TestTag";
+        protected const string DefaultTestImageName = "test.png";
+
+        protected static readonly string TestImagesDirectory = ConfigurationManager.AppSettings["ImagesPath"];
+        protected static readonly string DefaultTestImagePath = $"{TestImagesDirectory}\\{DefaultTestImageName}";
+
 
         [TestInitialize]
         public void Initialise()
@@ -48,10 +52,7 @@ namespace ContentExplorer.Tests.API
                 fileInfo.Delete();
             }
 
-            string cdnDiskPath = ConfigurationManager.AppSettings["BaseDirectory"];
-            string imagePath = $"{cdnDiskPath}\\{ConfigurationManager.AppSettings["ImagesPath"]}";
-            string testFilePath = $"{imagePath}\\test.png";
-            fileInfo = new FileInfo(testFilePath);
+            fileInfo = new FileInfo(DefaultTestImagePath);
             if (fileInfo.Exists)
             {
                 fileInfo.Delete();
@@ -60,44 +61,52 @@ namespace ContentExplorer.Tests.API
             FakeHttpContext.Dispose();
         }
 
-        protected FileInfo CreateAndReturnImage()
+        protected FileInfo CreateAndReturnImage(string relativeDirectory = null)
         {
             string cdnDiskPath = ConfigurationManager.AppSettings["BaseDirectory"];
+            string directoryPath = relativeDirectory == null
+                ? $"{cdnDiskPath}\\{TestImagesDirectory}"
+                : $"{cdnDiskPath}\\{TestImagesDirectory}\\{relativeDirectory}";
 
-            DirectoryInfo directoryInfo = new DirectoryInfo(cdnDiskPath);
+            DirectoryInfo directoryInfo = new DirectoryInfo(directoryPath);
             if (directoryInfo.Exists != true)
             {
                 directoryInfo.Create();
             }
 
-            string imagePath = $"{cdnDiskPath}\\{ConfigurationManager.AppSettings["ImagesPath"]}";
-            directoryInfo = new DirectoryInfo(imagePath);
-            if (directoryInfo.Exists != true)
-            {
-                directoryInfo.Create();
-            }
+            // We don't really need multiple files in a directory. Just attach multiple tag links to the same file.
 
+            string filePath = $"{cdnDiskPath}\\{DefaultTestImagePath}";
+            FileInfo createdFile = new FileInfo(filePath);
+            if (createdFile.Exists)
+            {
+                createdFile.Delete();
+            }
 
             // The image doesn't have to be readable. We just have to be able to guess it's an image from the extension
-            string testFilePath = $"{imagePath}\\test.png";
-            using (StreamWriter streamWriter = new StreamWriter(new FileStream(testFilePath, FileMode.CreateNew)))
+            using (StreamWriter streamWriter = new StreamWriter(new FileStream(filePath, FileMode.CreateNew)))
             {
                 streamWriter.WriteLine("Test file");
             }
 
-            FileInfo testFileInfo = new FileInfo(testFilePath);
+            FileInfo testFileInfo = new FileInfo(filePath);
             return testFileInfo;
         }
 
-        protected TagLink CreateAndReturnTagLink()
+        protected TagLink CreateAndReturnTagLink(string relativeDirectory = null, string tagName = null)
         {
-            Tag tag = CreateAndReturnTag();
-            FileInfo fileInfo = CreateAndReturnImage();
+            Tag tag = CreateAndReturnTag(tagName);
+
+            CreateAndReturnImage(relativeDirectory);
+
+            string filePath = relativeDirectory == null
+                ? DefaultTestImagePath
+                : $"{TestImagesDirectory}\\{relativeDirectory}\\{DefaultTestImageName}";
 
             TagLink tagLink = new TagLink
             {
                 TagId = tag.TagId,
-                FilePath = "Images/test.png"
+                FilePath = filePath
             };
 
             bool isSuccess = tagLink.Create();
@@ -107,11 +116,11 @@ namespace ContentExplorer.Tests.API
             return tagLink;
         }
 
-        protected Tag CreateAndReturnTag()
+        protected Tag CreateAndReturnTag(string tagName = null)
         {
             Tag tag = new Tag
             {
-                TagName = TestTagName
+                TagName = tagName ?? DefaultTestTagName
             };
 
             bool isSuccess = tag.Create();
