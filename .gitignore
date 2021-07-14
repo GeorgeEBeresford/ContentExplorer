@@ -350,5 +350,5 @@ MigrationBackup/
 .ionide/
 
 # Potentially sensitive files
-Web.config
-App_Data/database.db
+ContentExplorer/Web.config
+ContentExplorer/App_Data/database.db
