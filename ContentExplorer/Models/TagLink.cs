@@ -37,6 +37,35 @@ namespace ContentExplorer.Models
             return Tag;
         }
 
+        public static ICollection<TagLink> GetAll()
+        {
+            string cacheKey = "[TagLinksAll]";
+            if (HttpContext.Current.Cache[cacheKey] is ICollection<TagLink> cachedTags)
+            {
+                return cachedTags;
+            }
+
+            string query = @"SELECT TagLinks.FilePath, TagLinks.TagLinkId, TagLinks.TagId
+                           FROM TagLinks";
+
+            ICollection<IDictionary<string, object>> dataRows;
+            using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
+            {
+                dataRows = dbContext.GetDataRows(query);
+            }
+
+            ICollection<TagLink> tagLinks = dataRows
+                .Select(dataRow =>
+                    new TagLink(dataRow)
+                )
+                .ToList();
+
+            HttpContext.Current.Cache.Insert(cacheKey, tagLinks, null, DateTime.Today.AddDays(1), TimeSpan.Zero);
+            CacheKeys.Add(cacheKey);
+
+            return tagLinks;
+        }
+
         public static ICollection<TagLink> GetByDirectory(string directoryPath)
         {
             string cacheKey = $"[TagLinksByDirectory]{directoryPath}";
@@ -69,35 +98,6 @@ namespace ContentExplorer.Models
                     {
                         Tag = new Tag(dataRow)
                     }
-                )
-                .ToList();
-
-            HttpContext.Current.Cache.Insert(cacheKey, tagLinks, null, DateTime.Today.AddDays(1), TimeSpan.Zero);
-            CacheKeys.Add(cacheKey);
-
-            return tagLinks;
-        }
-
-        public static ICollection<TagLink> GetAll()
-        {
-            string cacheKey = "[TagLinksAll]";
-            if (HttpContext.Current.Cache[cacheKey] is ICollection<TagLink> cachedTags)
-            {
-                return cachedTags;
-            }
-
-            string query = @"SELECT TagLinks.FilePath, TagLinks.TagLinkId, TagLinks.TagId
-                           FROM TagLinks";
-
-            ICollection<IDictionary<string, object>> dataRows;
-            using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
-            {
-                dataRows = dbContext.GetDataRows(query);
-            }
-
-            ICollection<TagLink> tagLinks = dataRows
-                .Select(dataRow =>
-                    new TagLink(dataRow)
                 )
                 .ToList();
 
@@ -179,6 +179,8 @@ namespace ContentExplorer.Models
 
         public static ICollection<TagLink> GetByTagName(string tagName)
         {
+            tagName = tagName.ToLowerInvariant();
+
             string cacheKey = $"[TagLinksByTagName]{tagName}";
             if (HttpContext.Current.Cache[cacheKey] is ICollection<TagLink> cachedTags)
             {
@@ -186,7 +188,7 @@ namespace ContentExplorer.Models
             }
 
             string query =
-                @"SELECT TagLinks.FilePath AS [FilePath], TagLinks.TagId, TagLinks.TagLinkId
+                @"SELECT TagLinks.TagLinkId, TagLinks.FilePath AS [FilePath], TagLinks.TagId
                                 FROM TagLinks
                                 INNER JOIN Tags ON TagLinks.TagId = Tags.TagId
                                 WHERE Tags.TagName = @TagName";
@@ -299,7 +301,7 @@ namespace ContentExplorer.Models
         public bool Create()
         {
             // We may need to search for paths later and we don't want to be dealing with differences in slashes
-            FilePath = FilePath.ToLower().Replace("/", "\\");
+            FilePath = FilePath.ToLowerInvariant().Replace("/", "\\");
 
             const string query =
                 @"INSERT INTO TagLinks (TagId, FilePath) VALUES (@TagId, @FilePath); SELECT last_insert_rowid()";

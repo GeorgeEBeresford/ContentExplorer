@@ -55,7 +55,15 @@ namespace ContentExplorer.Tests.API
             fileInfo = new FileInfo(DefaultTestImagePath);
             if (fileInfo.Exists)
             {
-                fileInfo.Delete();
+                try
+                {
+                    fileInfo.Delete();
+                }
+                // File may be in-use. Try again.
+                catch (IOException)
+                {
+                    fileInfo.Delete();
+                }
             }
 
             FakeHttpContext.Dispose();

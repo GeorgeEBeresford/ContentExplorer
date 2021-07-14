@@ -29,10 +29,21 @@ namespace ContentExplorer.Tests.API.Models
         [TestMethod]
         public void GetTagLinkByDirectory()
         {
-            TagLink tagLink = CreateAndReturnTagLink();
+            CreateAndReturnTagLink();
             ICollection<TagLink> directoryTagLinks = TagLink.GetByDirectory(TestImagesDirectory);
             Assert.IsNotNull(directoryTagLinks, "Null was returned for directory tag links");
             Assert.AreNotEqual(0, directoryTagLinks.Count, "No tag links were returned for directory");
+        }
+
+        [TestMethod]
+        public void GetAllTagLinks()
+        {
+            CreateAndReturnTagLink();
+            CreateAndReturnTagLink();
+
+            ICollection<TagLink> allTagLinks = TagLink.GetAll();
+            Assert.IsNotNull(allTagLinks, "Null was returned for directory tag links");
+            Assert.AreEqual(2, allTagLinks.Count);
         }
 
         [TestMethod]
@@ -58,6 +69,7 @@ namespace ContentExplorer.Tests.API.Models
             nonMatchingTagLink.FilePath = $"{TestImagesDirectory}\\Nested\\test2.png";
             nonMatchingTagLink.Create();
 
+            // Add a new file with just the default tag so we can make sure multiple filters return the correct files
             Tag singleMatchTag = CreateAndReturnTag();
             TagLink singleMatchTagLink = new TagLink
             {
@@ -68,13 +80,13 @@ namespace ContentExplorer.Tests.API.Models
 
             // Check for default tag
             ICollection<TagLink> nonRecursiveTagLinks =
-                TagLink.GetByDirectory(TestImagesDirectory, new[] { DefaultTestTagName });
+                TagLink.GetByDirectory(TestImagesDirectory, new[] {DefaultTestTagName});
 
             Assert.IsNotNull(nonRecursiveTagLinks, "Returned tag links were null");
             Assert.AreEqual(2, nonRecursiveTagLinks.Count);
 
             ICollection<TagLink> recursiveTagLinks =
-                TagLink.GetByDirectory(TestImagesDirectory, new[] { DefaultTestTagName }, true);
+                TagLink.GetByDirectory(TestImagesDirectory, new[] {DefaultTestTagName}, true);
 
             Assert.IsNotNull(recursiveTagLinks, "Returned tag links were null");
             Assert.AreEqual(3, recursiveTagLinks.Count);
@@ -91,6 +103,51 @@ namespace ContentExplorer.Tests.API.Models
 
             Assert.IsNotNull(recursiveTagLinks, "Returned tag links were null");
             Assert.AreEqual(2, recursiveTagLinks.Count);
+        }
+
+        [TestMethod]
+        public void GetTagLinkByTagName()
+        {
+            CreateAndReturnTagLink();
+            CreateAndReturnTagLink();
+
+            ICollection<TagLink> tagLinks = TagLink.GetByTagName(DefaultTestTagName);
+            Assert.IsNotNull(tagLinks, "Returned tag links are null");
+            Assert.AreEqual(2, tagLinks.Count);
+        }
+
+        [TestMethod]
+        public void CreateTagLink()
+        {
+            TagLink tagLink = CreateAndReturnTagLink();
+
+            using (SqliteWrapper sqliteWrapper = new SqliteWrapper("AppDb"))
+            {
+                IDictionary<string, object> dataRow = sqliteWrapper.GetDataRow(
+                    "SELECT * FROM TagLinks WHERE TagLinkId = @TagLinkId",
+                    SqliteWrapper.GenerateParameter("@TagLinkId", tagLink.TagLinkId)
+                );
+
+                Assert.IsNotNull(dataRow);
+            }
+        }
+
+        [TestMethod]
+        public void DeleteTagLink()
+        {
+            TagLink tagLink = CreateAndReturnTagLink();
+            bool isSuccess = tagLink.Delete();
+            Assert.IsTrue(isSuccess, "TagLink was not successfully deleted");
+
+            using (SqliteWrapper sqliteWrapper = new SqliteWrapper("AppDb"))
+            {
+                IDictionary<string, object> dataRow = sqliteWrapper.GetDataRow(
+                    "SELECT * FROM TagLinks WHERE TagLinkId = @TagLinkId",
+                    SqliteWrapper.GenerateParameter("@TagLinkId", tagLink.TagLinkId)
+                );
+
+                Assert.IsNull(dataRow);
+            }
         }
     }
 }
