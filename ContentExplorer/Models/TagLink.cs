@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Web;
 using Microsoft.Data.Sqlite;
@@ -35,6 +36,104 @@ namespace ContentExplorer.Models
 
             Tag = Tag.GetById(TagId);
             return Tag;
+        }
+
+        public static bool UpdateDirectoryPath(string oldDirectoryPath, string newDirectoryPath)
+        {
+            // The caller shouldn't have to care about which slash or case to use
+            oldDirectoryPath = oldDirectoryPath.Replace("/", "\\").ToLowerInvariant();
+            newDirectoryPath = newDirectoryPath.Replace("/", "\\").ToLowerInvariant();
+
+            // We need to distinguish between files and directories with the same name but the caller shouldn't have to worry about it
+            oldDirectoryPath = oldDirectoryPath.TrimEnd("\\".ToCharArray());
+            newDirectoryPath = newDirectoryPath.TrimEnd("\\".ToCharArray());
+
+            // Replaces any instances of the old directory path it finds with the new one. This may change rows unexpectedly. E.g. pictures/test/pictures/test/2.jpg
+            // Todo - Find a better way to do this
+            string query = @"UPDATE TagLinks
+                            SET FilePath = REPLACE(FilePath, @OldDirectoryPath, @NewDirectoryPath)
+                            WHERE FilePath LIKE @OldDirectoryPathLike
+                            AND FilePath NOT LIKE @OldDirectoryPathRecursionLike";
+
+            ICollection<SqliteParameter> dbParameters = new List<SqliteParameter>
+            {
+                SqliteWrapper.GenerateParameter("@NewDirectoryPath", $"{newDirectoryPath}\\"),
+                SqliteWrapper.GenerateParameter("@OldDirectoryPath", $"{oldDirectoryPath}\\"),
+                SqliteWrapper.GenerateParameter("@OldDirectoryPathLike", $"{oldDirectoryPath}\\%"),
+                SqliteWrapper.GenerateParameter("@OldDirectoryPathRecursionLike", $"{oldDirectoryPath}\\%\\%")
+            };
+
+            bool isSuccess;
+            using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
+            {
+                isSuccess = dbContext.ExecuteNonQuery(query, dbParameters);
+            }
+
+            return isSuccess;
+        }
+
+        public static bool UpdateFilePath(string oldFilePath, string newFilePath)
+        {
+            // The caller shouldn't have to care about which slash or case to use
+            oldFilePath = oldFilePath.Replace("/", "\\").ToLowerInvariant();
+            newFilePath = newFilePath.Replace("/", "\\").ToLowerInvariant();
+
+            // We need to distinguish between files and directories with the same name but the caller shouldn't have to worry about it
+            oldFilePath = oldFilePath.TrimEnd("\\".ToCharArray());
+            newFilePath = newFilePath.TrimEnd("\\".ToCharArray());
+
+            string query = @"UPDATE TagLinks SET FilePath = @NewFilePath WHERE FilePath = @OldFilePath";
+            ICollection<SqliteParameter> dbParameters = new List<SqliteParameter>
+            {
+                SqliteWrapper.GenerateParameter("@NewFilePath", newFilePath),
+                SqliteWrapper.GenerateParameter("@OldFilePath", oldFilePath)
+            };
+
+            bool isSuccess;
+            using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
+            {
+                isSuccess = dbContext.ExecuteNonQuery(query, dbParameters);
+            }
+
+            return isSuccess;
+        }
+
+        public static ICollection<TagLink> GetByFileName(string filePath)
+        {
+            string cacheKey = $"[TagLinksByFile]{filePath}";
+            if (HttpContext.Current.Cache[cacheKey] is ICollection<TagLink> cachedTags)
+            {
+                return cachedTags;
+            }
+
+            // The caller shouldn't have to care about which slash or case to use
+            filePath = filePath.Replace("/", "\\").ToLowerInvariant();
+
+            // We need to distinguish between files and directories with the same name but the caller shouldn't have to worry about it
+            filePath = filePath.TrimEnd("\\".ToCharArray());
+
+            string query = @"SELECT Tags.TagId, Tags.TagName, TagLinks.FilePath AS [FilePath], TagLinks.TagLinkId
+                                FROM Tags
+                                INNER JOIN TagLinks ON Tags.TagId = TagLinks.TagId
+                                WHERE TagLinks.FilePath = @FullName";
+
+
+            ICollection<IDictionary<string, object>> dataRows;
+            using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
+            {
+                dataRows = dbContext.GetDataRows(query, SqliteWrapper.GenerateParameter("@FullName", filePath));
+            }
+
+            ICollection<TagLink> tagLinks = dataRows
+                .Select(dataRow =>
+                    new TagLink(dataRow)
+                )
+                .ToList();
+
+            HttpContext.Current.Cache.Insert(cacheKey, tagLinks, null, DateTime.Today.AddDays(1), TimeSpan.Zero);
+            CacheKeys.Add(cacheKey);
+
+            return tagLinks;
         }
 
         public static ICollection<TagLink> GetAll()
@@ -327,6 +426,26 @@ namespace ContentExplorer.Models
             {
                 isSuccess = dbContext.ExecuteNonQuery(query, GenerateParameters());
             }
+
+            ClearCaches();
+
+            return isSuccess;
+        }
+
+        public bool Update()
+        {
+            // We may need to search for paths later and we don't want to be dealing with differences in slashes
+            FilePath = FilePath.ToLowerInvariant().Replace("/", "\\");
+
+            const string query =
+                @"UPDATE TagLinks SET TagId = @TagId, FilePath = @FilePath WHERE TagLinkId = @TagLinkId";
+
+            using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
+            {
+                dbContext.GetScalar(query, GenerateParameters());
+            }
+
+            bool isSuccess = TagLinkId != 0;
 
             ClearCaches();
 

@@ -71,7 +71,7 @@ VideoView.prototype.refreshMediaDisplay = function (subFilePreview, previousMedi
  */
 VideoView.prototype.formatThumbnailUrl = function (thumbnailUrl) {
 
-    return thumbnailUrl + ".jpg";
+    return thumbnailUrl;
 }
 
 $(function () {

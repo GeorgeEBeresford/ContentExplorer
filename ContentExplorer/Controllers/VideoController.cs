@@ -78,9 +78,17 @@ namespace ContentExplorer.Controllers
         [HttpGet]
         public ActionResult RebuildThumbnails(string path = "")
         {
-            DirectoryInfo baseDirectory = GetCurrentDirectory(path);
+            IThumbnailService videoThumbnailService = new VideoThumbnailService();
 
-            RebuildThumbnails(baseDirectory);
+            DirectoryInfo baseDirectory = GetCurrentDirectory(path);
+            IEnumerable<FileInfo> videos = baseDirectory.EnumerateFiles("*", SearchOption.AllDirectories)
+                .Where(image => videoThumbnailService.IsThumbnail(image) != true);
+
+            foreach (FileInfo video in videos)
+            {
+                videoThumbnailService.DeleteThumbnailIfExists(video);
+                videoThumbnailService.CreateThumbnail(video);
+            }
 
             return Json(true, JsonRequestBehavior.AllowGet);
         }
@@ -102,26 +110,6 @@ namespace ContentExplorer.Controllers
             VideoConversionService videoConversionService = new VideoConversionService();
 
             videoConversionService.ConvertUnplayableVideos(baseDirectory);
-
-            return Json(true, JsonRequestBehavior.AllowGet);
-        }
-
-        private ActionResult RebuildThumbnails(DirectoryInfo directory)
-        {
-            IEnumerable<DirectoryInfo> subDirectories = directory.GetDirectories();
-
-            foreach (DirectoryInfo subDirectory in subDirectories)
-            {
-                RebuildThumbnails(subDirectory);
-            }
-
-            VideoThumbnailService videoThumbnailService = new VideoThumbnailService();
-            IEnumerable<FileInfo> videos = directory.EnumerateFiles("*", SearchOption.AllDirectories);
-            foreach (FileInfo video in videos)
-            {
-                videoThumbnailService.DeleteThumbnailIfExists(video.FullName);
-                videoThumbnailService.CreateThumbnail(video.FullName);
-            }
 
             return Json(true, JsonRequestBehavior.AllowGet);
         }

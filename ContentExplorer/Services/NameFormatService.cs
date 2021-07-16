@@ -10,7 +10,7 @@ namespace ContentExplorer.Services
 {
     public class NameFormatService
     {
-        public void FormatFileName(FileInfo fileInfo)
+        public FileInfo FormatFileName(FileInfo fileInfo)
         {
             string formattedFileName = HttpUtility.UrlDecode(fileInfo.Name);
 
@@ -30,7 +30,7 @@ namespace ContentExplorer.Services
             }
 
             // Max length
-            bool isTooLong = fileInfo.FullName.Length > 257;
+            bool isTooLong = fileInfo.FullName.Length >= 250;
             if (isTooLong)
             {
                 formattedFileName = formattedFileName.Remove(50);
@@ -65,6 +65,9 @@ namespace ContentExplorer.Services
                     throw new DirectoryNotFoundException($"Could not find either directory {oldPath} or directory {formattedFullName}");
                 }
             }
+
+            FileInfo renamedFile = new FileInfo(formattedFullName);
+            return renamedFile;
         }
     }
 }

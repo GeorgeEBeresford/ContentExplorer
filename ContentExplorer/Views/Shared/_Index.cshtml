@@ -37,19 +37,6 @@
 
     <h2>Filters</h2>
 
-    @if (ViewBag.Filter == "type: gif")
-    {
-        <a href="@Url.Action("Index", new {path = currentDirectory, page = ViewBag.Page})">
-            <label>Animated Gifs: True</label>
-        </a>
-    }
-    else
-    {
-        <a href="@Url.Action("Index", new {path = currentDirectory, page = ViewBag.Page, filter = "type: gif"})">
-            <label>Animated Gifs: False</label>
-        </a>
-    }
-
     <div data-filter>
         <label class="input-group" for="txtFilter">
             Custom filter

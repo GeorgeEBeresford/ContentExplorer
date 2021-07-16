@@ -7,43 +7,39 @@ namespace ContentExplorer.Services
 {
     public class VideoThumbnailService : IThumbnailService
     {
-        public void CreateThumbnail(string videoFullName)
+        public void CreateThumbnail(FileInfo videoFileInfo)
         {
-            string thumbnailFileLocation = $"{videoFullName}.jpg";
-            CreateThumbnail(videoFullName, 240);
+            CreateThumbnail(videoFileInfo, 240);
 
-            FileInfo thumbnailInfo = new FileInfo(thumbnailFileLocation);
+            FileInfo thumbnailInfo = GetFileThumbnail(videoFileInfo);
             if (thumbnailInfo.Exists == false || thumbnailInfo.Length == 0)
             {
-                CreateThumbnail(videoFullName, 120);
+                CreateThumbnail(videoFileInfo, 120);
             }
 
-            thumbnailInfo = new FileInfo(thumbnailFileLocation);
+            thumbnailInfo = GetFileThumbnail(videoFileInfo);
             if (thumbnailInfo.Exists == false || thumbnailInfo.Length == 0)
             {
-                CreateThumbnail(videoFullName, 60);
+                CreateThumbnail(videoFileInfo, 60);
             }
 
-            thumbnailInfo = new FileInfo(thumbnailFileLocation);
+            thumbnailInfo = GetFileThumbnail(videoFileInfo);
             if (thumbnailInfo.Exists == false || thumbnailInfo.Length == 0)
             {
-                CreateThumbnail(videoFullName, 1);
+                CreateThumbnail(videoFileInfo, 1);
             }
 
             // If the video is less than 1 second long, it should really be a gif
-            thumbnailInfo = new FileInfo(thumbnailFileLocation);
+            thumbnailInfo = GetFileThumbnail(videoFileInfo);
             if (thumbnailInfo.Exists == false || thumbnailInfo.Length == 0)
             {
-                FileInfo fileInfo = new FileInfo(videoFullName);
-                fileInfo.MoveTo(fileInfo.FullName + ".shouldbegif");
+                videoFileInfo.MoveTo(videoFileInfo.FullName + ".shouldbegif");
             }
         }
 
-        public void DeleteThumbnailIfExists(string videoFullName)
+        public void DeleteThumbnailIfExists(FileInfo fileInfo)
         {
-            string thumbnailFileLocation = $"{videoFullName}.jpg";
-            FileInfo thumbnail = new FileInfo(thumbnailFileLocation);
-
+            FileInfo thumbnail = GetFileThumbnail(fileInfo);
             if (thumbnail.Exists)
             {
                 thumbnail.Delete();
@@ -54,51 +50,56 @@ namespace ContentExplorer.Services
         {
             FileTypeService fileTypeService = new FileTypeService();
 
-            FileInfo previewVideo = directory
+            FileInfo previewImage = directory
                 .EnumerateFiles()
-                .FirstOrDefault(file => fileTypeService.IsFileImage(file.Name));
+                .FirstOrDefault(file => fileTypeService.IsFileVideo(file.Name));
 
-            if (previewVideo != null)
+            if (previewImage != null)
             {
-                return previewVideo;
+                return previewImage;
             }
 
-            ICollection<DirectoryInfo> subDirectories = directory.GetDirectories();
+            IEnumerable<DirectoryInfo> subDirectories =
+                directory.EnumerateDirectories("*", SearchOption.AllDirectories);
 
-            if (subDirectories.Any())
-            {
-                FileInfo subVideoThumbnail = null;
+            FileInfo firstPreview = subDirectories
+                .Select(GetDirectoryThumbnail)
+                .FirstOrDefault(thumbnail => thumbnail != null);
 
-                for (int subDirectoryIndex = 0; subDirectoryIndex < subDirectories.Count; subDirectoryIndex++)
-                {
-                    DirectoryInfo subDirectory = subDirectories.ElementAt(subDirectoryIndex);
-                    subVideoThumbnail = GetDirectoryThumbnail(subDirectory);
-                }
-
-                return subVideoThumbnail;
-            }
-
-            return null;
+            return firstPreview;
         }
 
-        private void CreateThumbnail(string videoFullName, int frametime)
+        public FileInfo GetFileThumbnail(FileInfo fileInfo)
         {
-            string thumbnailFileLocation = $"{videoFullName}.jpg";
-            using (Stream jpgStream = new FileStream(thumbnailFileLocation, FileMode.Create))
+            string thumbnailPath = $"{fileInfo.FullName}.jpg";
+            FileInfo directoryThumbnail = new FileInfo(thumbnailPath);
+
+            return directoryThumbnail;
+        }
+
+        public bool IsThumbnail(FileInfo fileInfo)
+        {
+            bool isThumbnail = fileInfo.Name.EndsWith(".jpg");
+            return isThumbnail;
+        }
+
+        private void CreateThumbnail(FileInfo videoFileInfo, int frametime)
+        {
+            FileInfo thumbnailLocation = GetFileThumbnail(videoFileInfo);
+            using (Stream jpgStream = new FileStream(thumbnailLocation.FullName, FileMode.Create))
             {
                 FFMpegConverter ffMpeg = new FFMpegConverter();
 
                 try
                 {
-                    ffMpeg.GetVideoThumbnail(videoFullName, jpgStream, frametime);
+                    ffMpeg.GetVideoThumbnail(videoFileInfo.FullName, jpgStream, frametime);
                 }
                 catch (FFMpegException exception)
                 {
                     // File can not be properly read so no thumbnail for us
                     if (exception.ErrorCode == 69)
                     {
-                        FileInfo fileInfo = new FileInfo(videoFullName);
-                        fileInfo.MoveTo(fileInfo.FullName + ".broken");
+                        videoFileInfo.MoveTo(videoFileInfo.FullName + ".broken");
                     }
                 }
             }

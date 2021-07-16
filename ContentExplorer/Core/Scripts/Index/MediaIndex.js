@@ -367,7 +367,10 @@ MediaIndex.prototype.addMediaDependentActions = function () {
             self.$selectableForTagging.prop("checked", false);
         });
 
-    $mediaSelection.append($selectAll).append($selectNone);
+    $mediaSelection
+        .html("")
+        .append($selectAll)
+        .append($selectNone);
 
 }
 
@@ -382,12 +385,12 @@ MediaIndex.prototype.addTagsAsync = function () {
     );
 
     addTagsToAll
-        .then(function() {
+        .then(function () {
 
             self.$tagName.val("");
             deferred.resolve();
         })
-        .fail(function() {
+        .fail(function () {
 
             deferred.reject();
         });

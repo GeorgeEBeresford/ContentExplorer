@@ -20,12 +20,11 @@
     this.$escapeslideShow = $("[data-stop-slideshow]");
     this.$steppingStones = $("[data-stepping-stones]");
     this.$maxPages = $("[data-max-pages]");
+    this.$documentTitle = $("title");
 
     // If we're viewing a page where putting the preview for the current item in the middle would cause issues,
     // put the preview at the start (position 1). Otherwise, put the item in the middle.
     this.startingPreview = this.$currentPage.text() - 7 < 1 ? 1 : this.$currentPage.text() - 7;
-    console.log(this.startingPreview);
-    console.log(this.$currentPage.text());
     this.isSlideshowEnabled = this.$isSlideshowEnabled.is(":checked");
     this.slideshowDelay = +this.$slideshowDelay.val();
 
@@ -334,6 +333,7 @@ MediaView.prototype.addPageIncrement = function (pageIncrement) {
 
 MediaView.prototype.refreshMediaDisplay = function (subFilePreview, previousMediaInformation) {
 
+    this.$documentTitle.text(subFilePreview.Name + " | " + this.controller + " | ContentExplorer");
     this.$mediaName.text(subFilePreview.Name);
 
     this.$pageButtons.find("[data-page-button='" + this.$currentPage.text() + "']")

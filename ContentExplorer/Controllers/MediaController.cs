@@ -4,6 +4,7 @@ using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Web;
 using System.Web.Mvc;
 using ContentExplorer.Models;
 using ContentExplorer.Models.ViewModels;
@@ -20,7 +21,7 @@ namespace ContentExplorer.Controllers
 
             if (!currentDirectoryInfo.Exists)
             {
-                throw new InvalidOperationException("Current directory could not be found");
+                return Json(null, JsonRequestBehavior.AllowGet);
             }
 
             DirectoryInfo hierarchyRootInfo = GetHierarchicalRootInfo(mediaType);
@@ -42,7 +43,7 @@ namespace ContentExplorer.Controllers
 
             if (!currentDirectoryInfo.Exists)
             {
-                throw new InvalidOperationException("Current directory could not be found");
+                return Json(new List<MediaPreviewViewModel>(), JsonRequestBehavior.AllowGet);
             }
 
             string[] filters = filter.Split(",".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
@@ -51,12 +52,137 @@ namespace ContentExplorer.Controllers
 
             ICollection<MediaPreviewViewModel> directoryPreviews = matchingDirectories
                 .Select(subDirectoryInfo =>
-                    GetMediaPreviewFromSubDirectory(subDirectoryInfo, hierarchyRootInfo)
+                    GetMediaPreviewFromSubDirectory(subDirectoryInfo, hierarchyRootInfo, mediaType)
                 )
                 .Where(mediaPreview => mediaPreview != null)
                 .ToList();
 
             return Json(directoryPreviews, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpPost]
+        public JsonResult MoveSubDirectories(string[] directoryPaths, string newDirectoryPath, string mediaType)
+        {
+            directoryPaths = directoryPaths
+                .Where(filePath => string.IsNullOrEmpty(filePath) != true)
+                .Select(HttpUtility.UrlDecode)
+                .ToArray();
+
+            if (directoryPaths.Any() != true || string.IsNullOrEmpty(newDirectoryPath))
+            {
+                return Json(true, JsonRequestBehavior.AllowGet);
+            }
+
+            string websiteDiskLocation = ConfigurationManager.AppSettings["BaseDirectory"];
+            string hierarchyRoot = GetHierarchyRoot(mediaType);
+            string hierarchyRootDiskLocation = Path.Combine(websiteDiskLocation, hierarchyRoot);
+
+            IThumbnailService thumbnailService = GetThumbnailService(mediaType);
+
+            foreach (string directoryPath in directoryPaths)
+            {
+                DirectoryInfo directoryInfo = new DirectoryInfo($"{hierarchyRootDiskLocation}\\{directoryPath}");
+                DirectoryInfo newDirectoryInfo = new DirectoryInfo($"{hierarchyRootDiskLocation}\\{newDirectoryPath}\\{directoryInfo.Name}");
+                if (newDirectoryInfo.Exists != true)
+                {
+                    newDirectoryInfo.Create();
+                }
+
+                IEnumerable<FileInfo> directoryFiles = directoryInfo
+                    .EnumerateFiles("*", SearchOption.TopDirectoryOnly)
+                    .Where(subFile => thumbnailService.IsThumbnail(subFile) != true);
+
+                foreach (FileInfo fileInfo in directoryFiles)
+                {
+                    FileInfo thumbnail = thumbnailService.GetFileThumbnail(fileInfo);
+                    if (thumbnail.Exists)
+                    {
+                        string newThumbnailPath = $"{hierarchyRootDiskLocation}\\{newDirectoryPath}\\{directoryInfo.Name}\\{thumbnail.Name}";
+                        thumbnail.MoveTo(newThumbnailPath);
+                    }
+
+                    if (fileInfo.Exists)
+                    {
+                        string newFilePath =
+                            $"{hierarchyRootDiskLocation}\\{newDirectoryPath}\\{directoryInfo.Name}\\{fileInfo.Name}";
+                        fileInfo.MoveTo(newFilePath);
+                    }
+
+
+                }
+
+                TagLink.UpdateDirectoryPath(
+                    $"{hierarchyRoot}\\{directoryPath}",
+                    $"{hierarchyRoot}\\{newDirectoryPath}\\{directoryInfo.Name}\\"
+                );
+
+                bool areRemainingFiles = directoryInfo.EnumerateFiles("*", SearchOption.AllDirectories).Any();
+                if (areRemainingFiles != true)
+                {
+                    directoryInfo.Delete(true);
+                }
+            }
+
+            return Json(true, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpPost]
+        public JsonResult MoveSubFiles(string[] filePaths, string newDirectoryPath, string mediaType)
+        {
+            filePaths = filePaths
+                .Where(filePath => string.IsNullOrEmpty(filePath) != true)
+                .Select(HttpUtility.UrlDecode)
+                .ToArray();
+
+            if (filePaths.Any() != true || string.IsNullOrEmpty(newDirectoryPath))
+            {
+                return Json(true, JsonRequestBehavior.AllowGet);
+            }
+
+            string websiteDiskLocation = ConfigurationManager.AppSettings["BaseDirectory"];
+            string hierarchyRoot = GetHierarchyRoot(mediaType);
+            string hierarchyRootDiskLocation = Path.Combine(websiteDiskLocation, hierarchyRoot);
+            DirectoryInfo newDirectoryInfo = new DirectoryInfo($"{hierarchyRootDiskLocation}\\{newDirectoryPath}");
+            if (newDirectoryInfo.Exists != true)
+            {
+                newDirectoryInfo.Create();
+            }
+
+            IThumbnailService thumbnailService = GetThumbnailService(mediaType);
+            FileInfo firstFileInfo = new FileInfo($"{hierarchyRootDiskLocation}\\{filePaths[0]}");
+            string directoryParentPath = firstFileInfo.DirectoryName;
+
+            foreach (string filePath in filePaths)
+            {
+                FileInfo fileInfo = new FileInfo($"{hierarchyRootDiskLocation}\\{filePath}");
+                string newFilePath = $"{hierarchyRootDiskLocation}\\{newDirectoryPath}\\{fileInfo.Name}";
+
+                FileInfo thumbnail = thumbnailService.GetFileThumbnail(fileInfo);
+                if (thumbnail.Exists)
+                {
+                    string newThumbnailPath = $"{hierarchyRootDiskLocation}\\{newDirectoryPath}\\{thumbnail.Name}";
+                    thumbnail.MoveTo(newThumbnailPath);
+                }
+
+                if (fileInfo.Exists)
+                {
+                    fileInfo.MoveTo(newFilePath);
+                }
+
+                TagLink.UpdateFilePath(
+                    $"{hierarchyRoot}\\{filePath}",
+                    $"{hierarchyRoot}\\{newDirectoryPath}\\{fileInfo.Name}"
+                );
+            }
+
+            DirectoryInfo parentDirectory = new DirectoryInfo(directoryParentPath);
+            bool areRemainingFiles = parentDirectory.EnumerateFiles("*", SearchOption.AllDirectories).Any();
+            if (areRemainingFiles != true)
+            {
+                parentDirectory.Delete(true);
+            }
+
+            return Json(true, JsonRequestBehavior.AllowGet);
         }
 
         [HttpGet]
@@ -72,7 +198,11 @@ namespace ContentExplorer.Controllers
 
             if (!currentDirectoryInfo.Exists)
             {
-                throw new InvalidOperationException("Current directory could not be found");
+                return Json(new PaginatedViewModel<MediaPreviewViewModel>()
+                {
+                    CurrentPage = new List<MediaPreviewViewModel>(),
+                    Total = 0
+                }, JsonRequestBehavior.AllowGet);
             }
 
             DirectoryInfo hierarchyRootInfo = new DirectoryInfo(hierarchyRootDiskLocation);
@@ -82,7 +212,7 @@ namespace ContentExplorer.Controllers
             ICollection<MediaPreviewViewModel> filePreviews = subFiles
                 .Skip(skip)
                 .Take(take)
-                .Select(subFile => GetMediaPreviewFromSubFile(subFile, hierarchyRootInfo))
+                .Select(subFile => GetMediaPreviewFromSubFile(subFile, hierarchyRootInfo, mediaType))
                 .ToArray();
 
             PaginatedViewModel<MediaPreviewViewModel> paginatedViewModel = new PaginatedViewModel<MediaPreviewViewModel>
@@ -103,13 +233,13 @@ namespace ContentExplorer.Controllers
             FileInfo image = fileInfos.ElementAt(page - 1);
 
             DirectoryInfo hierarchicalRootInfo = GetHierarchicalRootInfo(mediaType);
-            MediaPreviewViewModel imageViewModel = GetMediaPreviewFromSubFile(image, hierarchicalRootInfo);
+            MediaPreviewViewModel imageViewModel = GetMediaPreviewFromSubFile(image, hierarchicalRootInfo, mediaType);
 
             return Json(imageViewModel, JsonRequestBehavior.AllowGet);
         }
 
         private MediaPreviewViewModel GetMediaPreviewFromSubDirectory(DirectoryInfo subDirectory,
-            DirectoryInfo hierarchicalDirectoryInfo)
+            DirectoryInfo hierarchicalDirectoryInfo, string mediaType)
         {
             IEnumerable<FileInfo> matchingSubFiles = subDirectory.EnumerateFiles("*.*", SearchOption.AllDirectories);
             IEnumerable<FileInfo> orderedSubFiles = OrderAlphabetically(matchingSubFiles);
@@ -120,27 +250,52 @@ namespace ContentExplorer.Controllers
                 return null;
             }
 
+            IThumbnailService thumbnailService = GetThumbnailService(mediaType);
+            thumbnailService.CreateThumbnail(firstMatchingImage);
+
             MediaPreviewViewModel mediaPreview = new MediaPreviewViewModel
             {
                 Name = subDirectory.Name,
                 Path = GetUrl(subDirectory).Substring(hierarchicalDirectoryInfo.Name.Length).TrimStart('/'),
                 ContentUrl = GetUrl(subDirectory),
-                ThumbnailUrl = GetUrl(firstMatchingImage),
+                ThumbnailUrl = GetUrl(thumbnailService.GetFileThumbnail(firstMatchingImage)),
                 TaggingUrl = GetUrl(subDirectory).Substring(hierarchicalDirectoryInfo.Name.Length).TrimStart('/')
             };
 
             return mediaPreview;
         }
 
-        private MediaPreviewViewModel GetMediaPreviewFromSubFile(FileInfo subFile,
-            DirectoryInfo hierarchicalDirectoryInfo)
+        private IThumbnailService GetThumbnailService(string mediaType)
         {
+            IThumbnailService thumbnailService;
+
+            switch (mediaType)
+            {
+                case "image":
+                    thumbnailService = new ImageThumbnailService();
+                    break;
+                case "video":
+                    thumbnailService = new VideoThumbnailService();
+                    break;
+                default:
+                    throw new NotImplementedException($"Media type {mediaType} is not supported");
+            }
+
+            return thumbnailService;
+        }
+
+        private MediaPreviewViewModel GetMediaPreviewFromSubFile(FileInfo subFile,
+            DirectoryInfo hierarchicalDirectoryInfo, string mediaType)
+        {
+            IThumbnailService thumbnailService = GetThumbnailService(mediaType);
+            thumbnailService.CreateThumbnail(subFile);
+
             MediaPreviewViewModel mediaPreview = new MediaPreviewViewModel
             {
                 Name = subFile.Name,
                 Path = GetUrl(subFile.Directory).Substring(hierarchicalDirectoryInfo.Name.Length).TrimStart('/'),
                 ContentUrl = $"{ConfigurationManager.AppSettings["CDNPath"]}/{GetUrl(subFile)}",
-                ThumbnailUrl = GetUrl(subFile),
+                ThumbnailUrl = GetUrl(thumbnailService.GetFileThumbnail(subFile)),
                 TaggingUrl = GetUrl(subFile).Substring(hierarchicalDirectoryInfo.Name.Length).TrimStart('/')
             };
 
@@ -197,9 +352,14 @@ namespace ContentExplorer.Controllers
                     ? currentDirectoryInfo.EnumerateFiles("*.*", SearchOption.AllDirectories)
                     : currentDirectoryInfo.EnumerateFiles("*.*", SearchOption.TopDirectoryOnly);
 
+
                 if (mediaType == "image")
                 {
-                    subFiles = subFiles.Where(fileInfo => fileTypeService.IsFileImage(fileInfo.Name));
+                    IThumbnailService thumbnailService = new ImageThumbnailService();
+
+                    subFiles = subFiles.Where(fileInfo =>
+                        fileTypeService.IsFileImage(fileInfo.Name) && thumbnailService.IsThumbnail(fileInfo) != true
+                    );
                 }
                 else
                 {
