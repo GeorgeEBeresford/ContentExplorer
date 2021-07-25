@@ -21,12 +21,15 @@
     this.$steppingStones = $("[data-stepping-stones]");
     this.$maxPages = $("[data-max-pages]");
     this.$documentTitle = $("title");
+    this.$tags = $("[data-tags]");
+    this.$tagList = $("[data-tag-list]");
 
     // If we're viewing a page where putting the preview for the current item in the middle would cause issues,
     // put the preview at the start (position 1). Otherwise, put the item in the middle.
     this.startingPreview = this.$currentPage.text() - 7 < 1 ? 1 : this.$currentPage.text() - 7;
     this.isSlideshowEnabled = this.$isSlideshowEnabled.is(":checked");
     this.slideshowDelay = +this.$slideshowDelay.val();
+    this.currentMediaItem = null;
 
     /**
      * The controller for the current media type
@@ -39,6 +42,12 @@
      * @type {MediaRepository}
      */
     this.mediaRepository = new MediaRepository();
+
+    /**
+     * A repository for setting or retrieving tags for the current file or directory
+     * @type {MediaRepository}
+     */
+    this.tagRepository = new TagRepository();
 
     /**
      * The kind of media we're processing
@@ -181,6 +190,30 @@ MediaView.prototype.synchroniseFocus = function () {
     }
 }
 
+MediaView.prototype.renderTagsAsync = function() {
+
+    var self = this;
+    var deferred = $.Deferred();
+
+    this.tagRepository.getFileTagsAsync(this.currentMediaItem.TaggingUrl, this.mediaType)
+        .then(function(tags) {
+
+            tags.forEach(function(tag) {
+
+                var $tagListItem = $("<li>").text(tag.TagName);
+                self.$tagList.append($tagListItem);
+            });
+
+            deferred.resolve();
+        })
+        .fail(function() {
+
+            deferred.reject();
+        });
+
+    return deferred.promise();
+}
+
 MediaView.prototype.renderPageButtonsAsync = function () {
 
     var deferred = $.Deferred();
@@ -302,6 +335,7 @@ MediaView.prototype.navigatePagesAsync = function (pageIncrement) {
     this.mediaRepository.getSubFileAsync(this.relativeDirectory, +this.$currentPage.text(), this.mediaType, this.filter)
         .then(function (subFile) {
 
+            self.currentMediaItem = subFile;
             self.refreshMediaDisplay(subFile, previousMediaInformation);
             deferred.resolve();
         })
@@ -332,6 +366,8 @@ MediaView.prototype.addPageIncrement = function (pageIncrement) {
 }
 
 MediaView.prototype.refreshMediaDisplay = function (subFilePreview, previousMediaInformation) {
+
+    this.renderTagsAsync();
 
     this.$documentTitle.text(subFilePreview.Name + " | " + this.controller + " | ContentExplorer");
     this.$mediaName.text(subFilePreview.Name);

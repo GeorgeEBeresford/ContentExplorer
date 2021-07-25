@@ -1,16 +1,15 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Linq;
 using System.Web;
 using Microsoft.Data.Sqlite;
+using NReco.VideoConverter;
 
 namespace ContentExplorer.Models
 {
     public class TagLink
     {
-        private static readonly List<string> CacheKeys = new List<string>();
-
         public TagLink()
         {
         }
@@ -100,7 +99,7 @@ namespace ContentExplorer.Models
 
         public static ICollection<TagLink> GetByFileName(string filePath)
         {
-            string cacheKey = $"[TagLinksByFile]{filePath}";
+            string cacheKey = $"[TagLinks][ByFile]{filePath}";
             if (HttpContext.Current.Cache[cacheKey] is ICollection<TagLink> cachedTags)
             {
                 return cachedTags;
@@ -131,14 +130,13 @@ namespace ContentExplorer.Models
                 .ToList();
 
             HttpContext.Current.Cache.Insert(cacheKey, tagLinks, null, DateTime.Today.AddDays(1), TimeSpan.Zero);
-            CacheKeys.Add(cacheKey);
 
             return tagLinks;
         }
 
         public static ICollection<TagLink> GetAll()
         {
-            string cacheKey = "[TagLinksAll]";
+            string cacheKey = "[TagLinks][All]";
             if (HttpContext.Current.Cache[cacheKey] is ICollection<TagLink> cachedTags)
             {
                 return cachedTags;
@@ -160,14 +158,13 @@ namespace ContentExplorer.Models
                 .ToList();
 
             HttpContext.Current.Cache.Insert(cacheKey, tagLinks, null, DateTime.Today.AddDays(1), TimeSpan.Zero);
-            CacheKeys.Add(cacheKey);
 
             return tagLinks;
         }
 
         public static ICollection<TagLink> GetByDirectory(string directoryPath)
         {
-            string cacheKey = $"[TagLinksByDirectory]{directoryPath}";
+            string cacheKey = $"[TagLinks][ByDirectory]{directoryPath}";
             if (HttpContext.Current.Cache[cacheKey] is ICollection<TagLink> cachedTags)
             {
                 return cachedTags;
@@ -201,22 +198,29 @@ namespace ContentExplorer.Models
                 .ToList();
 
             HttpContext.Current.Cache.Insert(cacheKey, tagLinks, null, DateTime.Today.AddDays(1), TimeSpan.Zero);
-            CacheKeys.Add(cacheKey);
 
             return tagLinks;
         }
 
-        public static ICollection<TagLink> GetByDirectory(string directoryPath, string[] filters, bool isRecursive = false)
+        public static ICollection<TagLink> GetByDirectory(string directoryPath, string[] filters, int skip, int take,
+            bool isRecursive = false)
         {
             filters = filters.Select(filter => filter.ToLowerInvariant()).ToArray();
 
-            string cacheKey = $"[TagLinksByDirectoryAndFilters]{directoryPath}{string.Join(",", filters)}{isRecursive}";
+            // The caller shouldn't have to care about which slash or case to use
+            directoryPath = directoryPath.Replace("/", "\\").ToLowerInvariant();
+
+            // We need to distinguish between files and directories with the same name but the caller shouldn't have to worry about it
+            directoryPath = directoryPath.TrimEnd("\\".ToCharArray());
+
+            string cacheKey =
+                $"[TagLinks][ByDirectoryAndFilters]{directoryPath}|{string.Join(",", filters)}|{skip}|{take}|{isRecursive}|";
             if (HttpContext.Current.Cache[cacheKey] is ICollection<TagLink> cachedTags)
             {
                 return cachedTags;
             }
 
-            string query = $@"WITH FilePathTags AS (
+            string query = @"WITH FilePathTags AS (
 	                            SELECT
 		                            (',' || GROUP_CONCAT(Tags.TagName) || ',') AS [CombinedTags],
 		                            TagLinks.FilePath
@@ -234,26 +238,27 @@ namespace ContentExplorer.Models
                             INNER JOIN FilePathTags ON FilePathTags.FilePath = TagLinks.FilePath
                             WHERE TagLinks.FilePath LIKE @FilePath";
 
-            SqliteParameter[] dbParameters = new SqliteParameter[filters.Length + 2];
+            List<SqliteParameter> dbParameters = new List<SqliteParameter>();
 
             for (int filterIndex = 0; filterIndex < filters.Length; filterIndex++)
             {
                 string stringParameter = $"@{filterIndex}";
                 query += $" AND FilePathTags.CombinedTags LIKE {stringParameter}";
-                dbParameters[filterIndex] = SqliteWrapper.GenerateParameter(stringParameter, $"%,{filters[filterIndex]},%");
+                dbParameters.Add(SqliteWrapper.GenerateParameter(stringParameter, $"%,{filters[filterIndex]},%"));
             }
 
             // Add the file path parameter to the end of the array
-            dbParameters[filters.Length] = SqliteWrapper.GenerateParameter("@FilePath", $"{directoryPath}\\%");
+            dbParameters.Add(SqliteWrapper.GenerateParameter("@FilePath", $"{directoryPath}\\%"));
 
             if (isRecursive != true)
             {
                 query += " AND TagLinks.FilePath NOT LIKE @ExcludedFilePath";
-                dbParameters[filters.Length + 1] = SqliteWrapper.GenerateParameter("@ExcludedFilePath", $"{directoryPath}\\%\\%");
+                dbParameters.Add(SqliteWrapper.GenerateParameter("@ExcludedFilePath", $"{directoryPath}\\%\\%"));
             }
 
-            query += " GROUP BY TagLinks.FilePath";
-
+            query += " GROUP BY TagLinks.FilePath LIMIT @Take OFFSET @Skip";
+            dbParameters.Add(SqliteWrapper.GenerateParameter("@Skip", skip));
+            dbParameters.Add(SqliteWrapper.GenerateParameter("@Take", take));
 
             ICollection<IDictionary<string, object>> dataRows;
             using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
@@ -271,16 +276,76 @@ namespace ContentExplorer.Models
                 .ToList();
 
             HttpContext.Current.Cache.Insert(cacheKey, tagLinks, null, DateTime.Today.AddDays(1), TimeSpan.Zero);
-            CacheKeys.Add(cacheKey);
 
             return tagLinks;
+        }
+
+        public static int GetFileCount(string directoryPath, string[] filters, int skip, int take,
+            bool isRecursive = false)
+        {
+            filters = filters.Select(filter => filter.ToLowerInvariant()).ToArray();
+
+            // The caller shouldn't have to care about which slash or case to use
+            directoryPath = directoryPath.Replace("/", "\\").ToLowerInvariant();
+
+            // We need to distinguish between files and directories with the same name but the caller shouldn't have to worry about it
+            directoryPath = directoryPath.TrimEnd("\\".ToCharArray());
+
+            string cacheKey =
+                $"[TagLinks][CountByDirectoryAndFilters]{directoryPath}|{string.Join(",", filters)}|{skip}|{take}|{isRecursive}|";
+            if (HttpContext.Current.Cache[cacheKey] is int cachedCount)
+            {
+                return cachedCount;
+            }
+
+            string query = @"WITH FilePathTags AS (
+	                            SELECT
+		                            (',' || GROUP_CONCAT(Tags.TagName) || ',') AS [CombinedTags],
+		                            TagLinks.FilePath
+	                            FROM TagLinks
+	                            INNER JOIN Tags ON Tags.TagId = TagLinks.TagId
+	                            GROUP BY TagLinks.FilePath
+                            )
+                            SELECT COUNT(DISTINCT TagLinks.FilePath)
+                            FROM TagLinks
+                            INNER JOIN Tags ON Tags.TagId = TagLinks.TagId
+                            INNER JOIN FilePathTags ON FilePathTags.FilePath = TagLinks.FilePath
+                            WHERE TagLinks.FilePath LIKE @FilePath";
+
+            List<SqliteParameter> dbParameters = new List<SqliteParameter>();
+
+            for (int filterIndex = 0; filterIndex < filters.Length; filterIndex++)
+            {
+                string stringParameter = $"@{filterIndex}";
+                query += $" AND FilePathTags.CombinedTags LIKE {stringParameter}";
+                dbParameters.Add(SqliteWrapper.GenerateParameter(stringParameter, $"%,{filters[filterIndex]},%"));
+            }
+
+            // Add the file path parameter to the end of the array
+            dbParameters.Add(SqliteWrapper.GenerateParameter("@FilePath", $"{directoryPath}\\%"));
+
+            if (isRecursive != true)
+            {
+                query += " AND TagLinks.FilePath NOT LIKE @ExcludedFilePath";
+                dbParameters.Add(SqliteWrapper.GenerateParameter("@ExcludedFilePath", $"{directoryPath}\\%\\%"));
+            }
+
+            int numberOfRecords;
+            using (SqliteWrapper dbContext = new SqliteWrapper("AppDb"))
+            {
+                numberOfRecords = Convert.ToInt32(dbContext.GetScalar(query, dbParameters));
+            }
+
+            HttpContext.Current.Cache.Insert(cacheKey, numberOfRecords, null, DateTime.Today.AddDays(1), TimeSpan.Zero);
+
+            return numberOfRecords;
         }
 
         public static ICollection<TagLink> GetByTagName(string tagName)
         {
             tagName = tagName.ToLowerInvariant();
 
-            string cacheKey = $"[TagLinksByTagName]{tagName}";
+            string cacheKey = $"[TagLinks][ByTagName]{tagName}";
             if (HttpContext.Current.Cache[cacheKey] is ICollection<TagLink> cachedTags)
             {
                 return cachedTags;
@@ -304,7 +369,6 @@ namespace ContentExplorer.Models
                 .ToList();
 
             HttpContext.Current.Cache.Insert(cacheKey, tagLinks, null, DateTime.Today.AddDays(1), TimeSpan.Zero);
-            CacheKeys.Add(cacheKey);
 
             return tagLinks;
         }
@@ -391,9 +455,13 @@ namespace ContentExplorer.Models
 
         private static void ClearCaches()
         {
-            foreach (string cacheKey in CacheKeys)
+            foreach (DictionaryEntry cacheEntry in HttpContext.Current.Cache)
             {
-                HttpContext.Current.Cache.Remove(cacheKey);
+                string cacheKey = cacheEntry.Key.ToString();
+                if (cacheKey.StartsWith("[TagLinks]"))
+                {
+                    HttpContext.Current.Cache.Remove(cacheKey);
+                }
             }
         }
 

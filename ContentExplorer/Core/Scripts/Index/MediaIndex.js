@@ -367,10 +367,20 @@ MediaIndex.prototype.addMediaDependentActions = function () {
             self.$selectableForTagging.prop("checked", false);
         });
 
+    var $moveFiles = $("<button>")
+        .addClass("btn btn-default")
+        .text("Move selected")
+        .on("click", function () {
+
+            self.moveSelectedFilesAsync();
+            self.moveSelectedDirectoriesAsync();
+        });
+
     $mediaSelection
         .html("")
         .append($selectAll)
-        .append($selectNone);
+        .append($selectNone)
+        .append($moveFiles);
 
 }
 
@@ -389,6 +399,110 @@ MediaIndex.prototype.addTagsAsync = function () {
 
             self.$tagName.val("");
             deferred.resolve();
+        })
+        .fail(function () {
+
+            deferred.reject();
+        });
+
+    return deferred.promise();
+}
+
+MediaIndex.prototype.moveSelectedDirectoriesAsync = function () {
+
+    var self = this;
+    var deferred = $.Deferred();
+    var $selectedCheckboxes = this.$selectableForTagging.filter("[data-tag-type='directory']:checked");
+
+    if ($selectedCheckboxes.length === 0) {
+
+        deferred.reject();
+        return deferred.promise();
+    }
+
+    var newDirectoryPath = prompt("New Directory Path: ", this.directoryPath);
+    if (newDirectoryPath === "" || newDirectoryPath === null || typeof (newDirectoryPath) === "undefined") {
+
+        deferred.reject();
+        return deferred.promise();
+    }
+
+    var directoryPaths = [];
+    $selectedCheckboxes.each(function (_, selectedCheckbox) {
+
+        var $selectedCheckbox = $(selectedCheckbox);
+        var directoryPath = $selectedCheckbox.attr("data-path");
+        directoryPaths.push(directoryPath);
+    });
+
+    this.mediaRepository.moveSubDirectories(directoryPaths, newDirectoryPath, this.mediaType)
+        .then(function () {
+
+            self.$directoryList.html("");
+            self.$fileList.html("");
+
+            // We've just moved some files around. Recalculate which files we need to show
+            self.initialiseAsync()
+                .then(function () {
+
+                    deferred.resolve();
+                })
+                .fail(function () {
+
+                    deferred.reject();
+                });
+        })
+        .fail(function () {
+
+            deferred.reject();
+        });
+
+    return deferred.promise();
+}
+
+MediaIndex.prototype.moveSelectedFilesAsync = function () {
+
+    var self = this;
+    var deferred = $.Deferred();
+    var $selectedCheckboxes = this.$selectableForTagging.filter("[data-tag-type='file']:checked");
+
+    if ($selectedCheckboxes.length === 0) {
+
+        deferred.reject();
+        return deferred.promise();
+    }
+
+    var newDirectoryPath = prompt("New Directory Path: ", this.directoryPath);
+    if (newDirectoryPath === "") {
+
+        deferred.reject();
+        return deferred.promise();
+    }
+
+    var filePaths = [];
+    $selectedCheckboxes.each(function (_, selectedCheckbox) {
+
+        var $selectedCheckbox = $(selectedCheckbox);
+        var filePath = $selectedCheckbox.attr("data-path");
+        filePaths.push(filePath);
+    });
+
+    this.mediaRepository.moveSubFiles(filePaths, newDirectoryPath, this.mediaType)
+        .then(function () {
+
+            self.$directoryList.html("");
+            self.$fileList.html("");
+
+            // We've just moved some files around. Recalculate which files we need to show
+            self.initialiseAsync()
+                .then(function () {
+
+                    deferred.resolve();
+                })
+                .fail(function () {
+
+                    deferred.reject();
+                });
         })
         .fail(function () {
 
@@ -507,13 +621,15 @@ MediaIndex.prototype.renderTagListAsync = function () {
 MediaIndex.prototype.addTagToList = function (tagName) {
 
     var self = this;
-    var $tagLink = $("[data-tag='" + tagName + "']");
+    var regex = new RegExp("'");
+    var encodedTagName = tagName.replace(regex, "%23");
+    var $tagLink = $("[data-tag='" + encodedTagName + "']");
 
     if ($tagLink.length !== 0) {
         return;
     }
 
-    $tagLink = $("<li>").attr("data-tag", tagName).addClass("tagList_item").text(tagName);
+    $tagLink = $("<li>").attr("data-tag", encodedTagName).addClass("tagList_item").text(tagName);
 
     $tagLink.on("click", function () {
 

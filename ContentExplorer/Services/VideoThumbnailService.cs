@@ -7,33 +7,39 @@ namespace ContentExplorer.Services
 {
     public class VideoThumbnailService : IThumbnailService
     {
-        public void CreateThumbnail(FileInfo videoFileInfo)
+        public void CreateThumbnail(FileInfo fileInfo)
         {
-            CreateThumbnail(videoFileInfo, 240);
-
-            FileInfo thumbnailInfo = GetFileThumbnail(videoFileInfo);
-            if (thumbnailInfo.Exists == false || thumbnailInfo.Length == 0)
+            FileInfo fileThumbnail = GetFileThumbnail(fileInfo);
+            if (fileThumbnail.Exists)
             {
-                CreateThumbnail(videoFileInfo, 120);
+                return;
             }
 
-            thumbnailInfo = GetFileThumbnail(videoFileInfo);
+            CreateThumbnail(fileInfo, 240);
+
+            FileInfo thumbnailInfo = GetFileThumbnail(fileInfo);
             if (thumbnailInfo.Exists == false || thumbnailInfo.Length == 0)
             {
-                CreateThumbnail(videoFileInfo, 60);
+                CreateThumbnail(fileInfo, 120);
             }
 
-            thumbnailInfo = GetFileThumbnail(videoFileInfo);
+            thumbnailInfo = GetFileThumbnail(fileInfo);
             if (thumbnailInfo.Exists == false || thumbnailInfo.Length == 0)
             {
-                CreateThumbnail(videoFileInfo, 1);
+                CreateThumbnail(fileInfo, 60);
+            }
+
+            thumbnailInfo = GetFileThumbnail(fileInfo);
+            if (thumbnailInfo.Exists == false || thumbnailInfo.Length == 0)
+            {
+                CreateThumbnail(fileInfo, 1);
             }
 
             // If the video is less than 1 second long, it should really be a gif
-            thumbnailInfo = GetFileThumbnail(videoFileInfo);
+            thumbnailInfo = GetFileThumbnail(fileInfo);
             if (thumbnailInfo.Exists == false || thumbnailInfo.Length == 0)
             {
-                videoFileInfo.MoveTo(videoFileInfo.FullName + ".shouldbegif");
+                fileInfo.MoveTo(fileInfo.FullName + ".shouldbegif");
             }
         }
 

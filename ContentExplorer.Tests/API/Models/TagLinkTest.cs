@@ -80,26 +80,26 @@ namespace ContentExplorer.Tests.API.Models
 
             // Check for default tag
             ICollection<TagLink> nonRecursiveTagLinks =
-                TagLink.GetByDirectory(TestImagesDirectory, new[] {DefaultTestTagName});
+                TagLink.GetByDirectory(TestImagesDirectory, new[] {DefaultTestTagName}, 0, -1);
 
             Assert.IsNotNull(nonRecursiveTagLinks, "Returned tag links were null");
             Assert.AreEqual(2, nonRecursiveTagLinks.Count);
 
             ICollection<TagLink> recursiveTagLinks =
-                TagLink.GetByDirectory(TestImagesDirectory, new[] {DefaultTestTagName}, true);
+                TagLink.GetByDirectory(TestImagesDirectory, new[] {DefaultTestTagName}, 0, -1, true);
 
             Assert.IsNotNull(recursiveTagLinks, "Returned tag links were null");
             Assert.AreEqual(3, recursiveTagLinks.Count);
 
             // Check for two tags
             nonRecursiveTagLinks =
-                TagLink.GetByDirectory(TestImagesDirectory, new[] {DefaultTestTagName, "Filtered"});
+                TagLink.GetByDirectory(TestImagesDirectory, new[] {DefaultTestTagName, "Filtered"}, 0, -1);
 
             Assert.IsNotNull(nonRecursiveTagLinks, "Returned tag links were null");
             Assert.AreEqual(1, nonRecursiveTagLinks.Count);
 
             recursiveTagLinks =
-                TagLink.GetByDirectory(TestImagesDirectory, new[] {DefaultTestTagName, "Filtered"}, true);
+                TagLink.GetByDirectory(TestImagesDirectory, new[] {DefaultTestTagName, "Filtered"}, 0, -1, true);
 
             Assert.IsNotNull(recursiveTagLinks, "Returned tag links were null");
             Assert.AreEqual(2, recursiveTagLinks.Count);

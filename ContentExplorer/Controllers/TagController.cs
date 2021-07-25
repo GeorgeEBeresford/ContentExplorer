@@ -16,7 +16,10 @@ namespace ContentExplorer.Controllers
         public JsonResult AddTagsToFiles(string[] filePaths, string[] tags, string mediaType)
         {
             // Filter inputs that would make no sense
-            filePaths = filePaths.Where(filePath => filePath != "").ToArray();
+            filePaths = filePaths
+                .Where(filePath => filePath != "")
+                .Select(HttpUtility.UrlDecode)
+                .ToArray();
             tags = tags.Where(tag => tag != "").Select(tag => tag.Trim()).ToArray();
 
             string rootDirectory = GetRootDirectory(mediaType);
@@ -58,6 +61,19 @@ namespace ContentExplorer.Controllers
             }
 
             return Json(isSuccess);
+        }
+
+        [HttpGet]
+        public JsonResult GetFileTags(string fileName, string mediaType)
+        {
+            fileName = GetRootDirectory(mediaType) + "\\" + fileName;
+
+            IFileSystemFilteringService fileSystemFilteringService = new FileSystemFilteringService();
+            ICollection<Tag> tagLinksForFile = Tag.GetByFile(fileName)
+                .OrderBy(tag => tag.TagName)
+                .ToArray();
+
+            return Json(tagLinksForFile, JsonRequestBehavior.AllowGet);
         }
 
         [HttpGet]

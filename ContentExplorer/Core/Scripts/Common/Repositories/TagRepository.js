@@ -90,21 +90,49 @@ function TagRepository() {
 
     /**
      * Retrieves the tags for the given directory and mediaType
-     * @param {string} currentDirectory - 
+     * @param {string} directoryPath -
      * @param {string} mediaType - 
      * @param {string} filter - 
      * @returns {JQuery.Promise<any>}
      */
-    this.getTagsAsync = function (currentDirectory, mediaType, filter) {
+    this.getTagsAsync = function (directoryPath, mediaType, filter) {
 
         var deferred = $.Deferred();
         var payload = {
-            directoryName: currentDirectory,
+            directoryName: directoryPath,
             mediaType: mediaType,
             filter: filter
         };
 
         httpRequester.getAsync("GetDirectoryTags", controller, payload)
+            .then(function (tags) {
+
+                deferred.resolve(tags);
+            })
+            .fail(function (xhr) {
+
+                alert("[" + xhr.status + "] " + xhr.statusText);
+                deferred.reject();
+            });
+
+        return deferred.promise();
+    }
+
+    /**
+     * Retrieves the tags for the given file and mediaType
+     * @param {string} filePath -
+     * @param {string} mediaType -
+     * @returns {JQuery.Promise<any>}
+     */
+    this.getFileTagsAsync = function(filePath, mediaType) {
+
+        var deferred = $.Deferred();
+        var payload = {
+            fileName: filePath,
+            mediaType: mediaType
+        };
+
+        httpRequester.getAsync("GetFileTags", controller, payload)
             .then(function (tags) {
 
                 deferred.resolve(tags);

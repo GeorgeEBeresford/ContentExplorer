@@ -9,6 +9,7 @@ using System.Web.Mvc;
 using ContentExplorer.Models;
 using ContentExplorer.Models.ViewModels;
 using ContentExplorer.Services;
+using Microsoft.Ajax.Utilities;
 
 namespace ContentExplorer.Controllers
 {
@@ -48,7 +49,7 @@ namespace ContentExplorer.Controllers
 
             string[] filters = filter.Split(",".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
             DirectoryInfo hierarchyRootInfo = new DirectoryInfo(hierarchyRootDiskLocation);
-            IEnumerable<DirectoryInfo> matchingDirectories = GetMatchingSubDirectories(currentDirectoryInfo, mediaType, filters);
+            IEnumerable<DirectoryInfo> matchingDirectories = GetMatchingSubDirectories(currentDirectoryInfo, filters, mediaType, 0, -1);
 
             ICollection<MediaPreviewViewModel> directoryPreviews = matchingDirectories
                 .Select(subDirectoryInfo =>
@@ -206,22 +207,53 @@ namespace ContentExplorer.Controllers
             }
 
             DirectoryInfo hierarchyRootInfo = new DirectoryInfo(hierarchyRootDiskLocation);
-            ICollection<FileInfo> subFiles = GetMatchingSubFiles(currentDirectoryInfo, mediaType, filters, false)
-                .ToList();
+            IEnumerable<FileInfo> subFiles =
+                GetMatchingSubFiles(currentDirectoryInfo, filters, mediaType, skip, take, false);
 
             ICollection<MediaPreviewViewModel> filePreviews = subFiles
-                .Skip(skip)
-                .Take(take)
                 .Select(subFile => GetMediaPreviewFromSubFile(subFile, hierarchyRootInfo, mediaType))
                 .ToArray();
+
+            int totalNumberOfFiles = filters.Any() != true
+                ? GetDirectoryFilesByMediaType(currentDirectoryInfo, mediaType, false).Count()
+                : TagLink.GetFileCount($"{hierarchyRoot}\\{currentDirectory}", filters, skip, take);
 
             PaginatedViewModel<MediaPreviewViewModel> paginatedViewModel = new PaginatedViewModel<MediaPreviewViewModel>
             {
                 CurrentPage = filePreviews,
-                Total = subFiles.Count()
+                Total = totalNumberOfFiles
             };
 
             return Json(paginatedViewModel, JsonRequestBehavior.AllowGet);
+        }
+
+        private IEnumerable<FileInfo> GetDirectoryFilesByMediaType(DirectoryInfo directoryInfo, string mediaType,
+            bool includeSubDirectories)
+        {
+            IEnumerable<FileInfo> subFiles = includeSubDirectories
+                ? directoryInfo.EnumerateFiles("*.*", SearchOption.AllDirectories)
+                : directoryInfo.EnumerateFiles("*.*", SearchOption.TopDirectoryOnly);
+
+            FileTypeService fileTypeService = new FileTypeService();
+            if (mediaType == "image")
+            {
+                IThumbnailService thumbnailService = new ImageThumbnailService();
+
+                subFiles = subFiles
+                    .Where(fileInfo =>
+                        fileTypeService.IsFileImage(fileInfo.Name) &&
+                        thumbnailService.IsThumbnail(fileInfo) != true
+                    );
+            }
+            else
+            {
+                subFiles = subFiles
+                    .Where(fileInfo =>
+                        fileTypeService.IsFileVideo(fileInfo.Name)
+                    );
+            }
+
+            return subFiles;
         }
 
         [HttpGet]
@@ -229,11 +261,16 @@ namespace ContentExplorer.Controllers
         {
             DirectoryInfo currentDirectoryInfo = GetCurrentDirectory(currentDirectory, mediaType);
             string[] filters = filter.Split(",".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
-            IEnumerable<FileInfo> fileInfos = GetMatchingSubFiles(currentDirectoryInfo, mediaType, filters, false);
-            FileInfo image = fileInfos.ElementAt(page - 1);
+            FileInfo mediaItem = GetMatchingSubFiles(currentDirectoryInfo, filters, mediaType, page - 1, 1, false)
+                .FirstOrDefault();
+
+            if (mediaItem == null)
+            {
+                return Json(null, JsonRequestBehavior.AllowGet);
+            }
 
             DirectoryInfo hierarchicalRootInfo = GetHierarchicalRootInfo(mediaType);
-            MediaPreviewViewModel imageViewModel = GetMediaPreviewFromSubFile(image, hierarchicalRootInfo, mediaType);
+            MediaPreviewViewModel imageViewModel = GetMediaPreviewFromSubFile(mediaItem, hierarchicalRootInfo, mediaType);
 
             return Json(imageViewModel, JsonRequestBehavior.AllowGet);
         }
@@ -288,7 +325,11 @@ namespace ContentExplorer.Controllers
             DirectoryInfo hierarchicalDirectoryInfo, string mediaType)
         {
             IThumbnailService thumbnailService = GetThumbnailService(mediaType);
-            thumbnailService.CreateThumbnail(subFile);
+
+            if (thumbnailService.GetFileThumbnail(subFile).Exists != true)
+            {
+                thumbnailService.CreateThumbnail(subFile);
+            }
 
             MediaPreviewViewModel mediaPreview = new MediaPreviewViewModel
             {
@@ -319,51 +360,52 @@ namespace ContentExplorer.Controllers
             return orderedEnumerable;
         }
 
-        private IEnumerable<DirectoryInfo> GetMatchingSubDirectories(DirectoryInfo currentDirectoryInfo, string mediaType,
-            string[] filters)
+        private IEnumerable<DirectoryInfo> GetMatchingSubDirectories(DirectoryInfo currentDirectoryInfo, string[] filters, string mediaType, int skip, int take)
         {
             IEnumerable<DirectoryInfo> subDirectories =
                 currentDirectoryInfo.EnumerateDirectories("*", SearchOption.TopDirectoryOnly);
 
             if (filters.Any() != true)
             {
+                subDirectories = subDirectories.Skip(skip);
+
+                // Keep the filtering consistent with SQLite
+                if (take != -1)
+                {
+                    subDirectories = subDirectories.Take(take);
+                }
+
                 return subDirectories;
             }
 
-            IEnumerable<DirectoryInfo> matchingSubDirectories = subDirectories
-                .Where(subDirectory =>
-                {
-                    string cdnDiskLocation = ConfigurationManager.AppSettings["BaseDirectory"];
-                    string directoryPath = subDirectory.FullName.Substring(cdnDiskLocation.Length + 1);
-                    IEnumerable<TagLink> directoryTagLinks = TagLink.GetByDirectory(directoryPath, filters, true);
-                    return directoryTagLinks.Any();
-                });
+            string cdnDiskLocation = ConfigurationManager.AppSettings["BaseDirectory"];
+
+            IEnumerable<TagLink> directoryTagLinks = subDirectories.SelectMany(subDirectory =>
+                TagLink.GetByDirectory(subDirectory.FullName.Substring(cdnDiskLocation.Length + 1), filters, skip, take, true)
+            );
+
+            IEnumerable<FileInfo> matchingSubFiles = directoryTagLinks
+                .Select(directoryTagLink => new FileInfo($"{cdnDiskLocation}\\{directoryTagLink.FilePath}"));
+
+            IEnumerable<DirectoryInfo> matchingSubDirectories = matchingSubFiles
+                .Select(subFile => subFile.Directory)
+                .DistinctBy(subFile => subFile.Parent.FullName);
 
             return matchingSubDirectories;
         }
 
-        private IEnumerable<FileInfo> GetMatchingSubFiles(DirectoryInfo currentDirectoryInfo, string mediaType,
-            string[] filters, bool includeSubDirectories)
+        private IEnumerable<FileInfo> GetMatchingSubFiles(DirectoryInfo currentDirectoryInfo, string[] filters, string mediaType, int skip, int take, bool includeSubDirectories)
         {
             if (filters.Any() != true)
             {
-                FileTypeService fileTypeService = new FileTypeService();
-                IEnumerable<FileInfo> subFiles = includeSubDirectories
-                    ? currentDirectoryInfo.EnumerateFiles("*.*", SearchOption.AllDirectories)
-                    : currentDirectoryInfo.EnumerateFiles("*.*", SearchOption.TopDirectoryOnly);
+                IEnumerable<FileInfo> subFiles =
+                    GetDirectoryFilesByMediaType(currentDirectoryInfo, mediaType, includeSubDirectories);
 
+                subFiles = subFiles.Skip(skip);
 
-                if (mediaType == "image")
+                if (take != -1)
                 {
-                    IThumbnailService thumbnailService = new ImageThumbnailService();
-
-                    subFiles = subFiles.Where(fileInfo =>
-                        fileTypeService.IsFileImage(fileInfo.Name) && thumbnailService.IsThumbnail(fileInfo) != true
-                    );
-                }
-                else
-                {
-                    subFiles = subFiles.Where(fileInfo => fileTypeService.IsFileVideo(fileInfo.Name));
+                    subFiles = subFiles.Take(take);
                 }
 
                 return subFiles;
@@ -372,7 +414,7 @@ namespace ContentExplorer.Controllers
             // If we're filtering the files, any files without a tag will be skipped anyway. We may as well go solely off the tag links
             string cdnDiskLocation = ConfigurationManager.AppSettings["BaseDirectory"];
             string directoryPath = currentDirectoryInfo.FullName.Substring(cdnDiskLocation.Length + 1);
-            IEnumerable<TagLink> directoryTagLinks = TagLink.GetByDirectory(directoryPath, filters);
+            IEnumerable<TagLink> directoryTagLinks = TagLink.GetByDirectory(directoryPath, filters, skip, take);
             IEnumerable<FileInfo> filesFromTagLinks =
                 directoryTagLinks.Select(tagLink => new FileInfo($"{cdnDiskLocation}\\{tagLink.FilePath}"));
 
